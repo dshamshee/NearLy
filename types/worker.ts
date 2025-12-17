@@ -1,15 +1,10 @@
 import mongoose from "mongoose";
 
 export interface Worker {
-    role: "WORKER";
-    name: string;
-    email: string;
+    userId: mongoose.Types.ObjectId;
     phone: string;
     aadharNumber?: string;
     isAadharVerified?: boolean;
-    password?: string;
-    googleId?: string;
-    avatar?: string;
     isActive?: boolean;
     isProfileCompleted?: boolean;
     profession: WorkerProfessions;
@@ -23,8 +18,6 @@ export interface Worker {
     currentBookingId?: mongoose.Types.ObjectId;
     longitude?: number;
     latitude?: number;
-    createdAt?: Date;
-    updatedAt?: Date;
 }
 
 export enum WorkerProfessions {

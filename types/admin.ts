@@ -1,11 +1,6 @@
+import mongoose from "mongoose";
+
 export interface Admin {
-    role: "ADMIN";
-    name: string;
-    email: string;
+    userId: mongoose.Types.ObjectId;
     phone?: string;
-    password?: string;
-    googleId?: string;
-    avatar?: string;
-    createdAt?: Date;
-    updatedAt?: Date;
 }

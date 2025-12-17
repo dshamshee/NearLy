@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 export interface Verification {
-    userId: string;
+    userId: mongoose.Types.ObjectId;
     isVerified?: boolean;
     verificationToken?: string;
     isVerificationTokenExpired?: boolean;
@@ -14,6 +14,4 @@ export interface Verification {
     suspendStartDate?: Date;
     suspendEndDate?: Date;
     isPermanentlySuspended?: boolean;
-    createdAt?: Date;
-    updatedAt?: Date;
 }

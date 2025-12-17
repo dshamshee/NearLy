@@ -3,15 +3,10 @@ import {Worker, WorkerProfessions} from '@/types/worker'
 
 
 const WorkerSchema = new mongoose.Schema<Worker>({
-    role: { type: String, required: true },
-    name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", unique: true, required: true },
     phone: { type: String, unique: true },
     aadharNumber: { type: String, unique: true },
     isAadharVerified: { type: Boolean, default: false },
-    password: String,
-    googleId: String,
-    avatar: String,
     longitude: Number,
     latitude: Number,
     currentBookingId: { type: mongoose.Schema.Types.ObjectId, ref: "Booking" },
@@ -25,8 +20,6 @@ const WorkerSchema = new mongoose.Schema<Worker>({
     averageRating: {type: Number, default: 0.0},
     totalBookings: {type: Number, default: 0},
     totalEarnings: {type: Number, default: 0},
-    createdAt: { type: Date, default: Date.now },
-    updatedAt: { type: Date, default: Date.now },
 })
 
 

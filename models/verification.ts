@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import {Verification} from '@/types/verification'
 
 const VerificationSchema = new mongoose.Schema<Verification>({
-    userId: {type: String, required: true},
+    userId: {type: mongoose.Schema.Types.ObjectId, ref: "User", unique: true, required: true},
     isVerified: { type: Boolean, default: false },
     verificationToken: { type: String },
     isVerificationTokenExpired: { type: Boolean, default: false },
@@ -15,8 +15,6 @@ const VerificationSchema = new mongoose.Schema<Verification>({
     suspendStartDate: { type: Date },
     suspendEndDate: { type: Date },
     isPermanentlySuspended: { type: Boolean, default: false },
-    createdAt: { type: Date, default: Date.now },
-    updatedAt: { type: Date, default: Date.now },
 })
 
 

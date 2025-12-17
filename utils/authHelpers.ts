@@ -1,5 +1,6 @@
 "use client";
 
+
 import { signIn } from "next-auth/react";
 
 type Role = "CUSTOMER" | "WORKER" | "ADMIN";
@@ -29,9 +30,13 @@ export async function signInWithRole(
   // The cookie will be read by the signIn callback in options.ts
   document.cookie = `authRole=${role}; path=/; max-age=300`; // Cookie expires in 5 minutes
   
-  // Call NextAuth signIn
-  await signIn(provider, {
+  // Call NextAuth signIn with redirect: false to handle response manually
+  const result = await signIn(provider, {
     callbackUrl: callbackUrl || "/",
+    redirect: false,
   });
+
+
+  return result;
 }
 

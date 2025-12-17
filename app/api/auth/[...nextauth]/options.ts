@@ -4,7 +4,12 @@ import WorkerModel from "@/models/worker";
 import { getServerSession, NextAuthOptions, Session } from "next-auth";
 import { JWT } from "next-auth/jwt";
 import GoogleProvider from "next-auth/providers/google";
+import CredentialsProvider from "next-auth/providers/credentials";
 import { cookies } from "next/headers";
+import dbConnect from "@/utils/dbConnection";
+import bcrypt from "bcryptjs";
+import {User} from '@/types/user'
+import UserModel from "@/models/user";
 
 export const authOptions: NextAuthOptions = {
   // Configure one or more authentication providers
@@ -13,6 +18,40 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     }),
+
+    CredentialsProvider({
+        id: "credentials",
+        name: "Credentials",
+        credentials: {
+          identifier: {label: "Identifier", type: "text"},
+          email: {label: "Email/Username", type: "text"},
+          password: {label: "Password", type: "password"},
+        },
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async authorize(credentials: any): Promise<any>{
+          await dbConnect();
+          console.log('credentials', credentials)
+
+          // Check if all the credentials are not provided then throw an error
+          if(!credentials?.email || !credentials?.password || !credentials?.identifier){
+            throw new Error("Missing credentials");
+          }
+
+          try {
+            const existingUser = await UserModel.findOne({email: credentials.email, role: credentials.identifier});
+            if(!existingUser)  throw new Error ("No user found with this email or username");
+
+            const isPasswordCorrect = await bcrypt.compare(credentials.password, existingUser.password as string);
+            if(isPasswordCorrect) return existingUser;
+            else throw new Error("Incorrect Password");
+
+          } catch (error: unknown) {
+            throw new Error(error as string)
+          }
+        }
+      })
+      
     // ...add more providers here
   ],
 
@@ -21,6 +60,8 @@ export const authOptions: NextAuthOptions = {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async signIn({user, account}: {user: any, account: any}){
+        await dbConnect();
+
         // Extract role from cookie (set before calling signIn from client)
         // Client should set cookie before signIn: document.cookie = "authRole=WORKER; path=/"
         let role: "CUSTOMER" | "WORKER" | "ADMIN" | undefined = undefined;
@@ -41,6 +82,7 @@ export const authOptions: NextAuthOptions = {
                     }
                 } catch {
                     // Continue with undefined role
+                    console.log("Error in extracting role from callbackUrl");
                 }
             }
         }
@@ -50,38 +92,15 @@ export const authOptions: NextAuthOptions = {
             role = "CUSTOMER";
         }
 
-        // Process based on role
-        if(role === "WORKER"){
-            const isWorker = await WorkerModel.findOne({email: user.email});
-            if(!isWorker) return false;
-            // Store role in account for jwt callback
-            if(account) account.role = role;
-        } else if(role === "ADMIN"){
-            let existingAdmin = await AdminModel.findOne({email: user.email});
-            if(!existingAdmin) {
-                existingAdmin = await AdminModel.create({
-                    role: "ADMIN",
-                    email: user.email,
-                    name: user.name,
-                    avatar: user.image as string,
-                    googleId: user.id
-                })
-            }
-            // Store role in account for jwt callback
-            if(account) account.role = role;
-        } else if(role === "CUSTOMER"){
-            let existingCustomer = await CustomerModel.findOne({email: user.email});
-            if(!existingCustomer){
-                existingCustomer = await CustomerModel.create({
-                    role: "CUSTOMER",
-                    email: user.email,
-                    name: user.name,
-                    avatar: user.image as string,
-                    googleId: user.id
-                })
-            }
-            // Store role in account for jwt callback
-            if(account) account.role = role;
+        let existingUser = await UserModel.findOne({email: user.email, role})
+        if(!existingUser){
+          existingUser = await UserModel.create({
+            role: role,
+            email: user.email,
+            name: user.name,
+            avatar: user.avatar,
+          })
+          await existingUser.save();
         }
         
         return true;
@@ -101,13 +120,8 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }: { session: Session; token: JWT }) {
 
         if(token?.email){
-            let loggedInUser = await CustomerModel.findOne({email: token?.email});
-            if(!loggedInUser){
-                loggedInUser = await WorkerModel.findOne({email: token?.email});
-                if(!loggedInUser){
-                    loggedInUser = await AdminModel.findOne({email: token?.email});
-                }
-            }
+            const loggedInUser = await UserModel.findOne({email: token?.email});
+            if(!loggedInUser) throw new Error("User not found");
 
             if(loggedInUser && session.user){
                 session.user._id = loggedInUser._id;
