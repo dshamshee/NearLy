@@ -1,6 +1,3 @@
-import AdminModel from "@/models/admin";
-import CustomerModel from "@/models/customer";
-import WorkerModel from "@/models/worker";
 import { getServerSession, NextAuthOptions, Session } from "next-auth";
 import { JWT } from "next-auth/jwt";
 import GoogleProvider from "next-auth/providers/google";
@@ -8,7 +5,6 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { cookies } from "next/headers";
 import dbConnect from "@/utils/dbConnection";
 import bcrypt from "bcryptjs";
-import {User} from '@/types/user'
 import UserModel from "@/models/user";
 
 export const authOptions: NextAuthOptions = {
@@ -24,7 +20,7 @@ export const authOptions: NextAuthOptions = {
         name: "Credentials",
         credentials: {
           identifier: {label: "Identifier", type: "text"},
-          email: {label: "Email/Username", type: "text"},
+          email: {label: "Email", type: "text"},
           password: {label: "Password", type: "password"},
         },
 
@@ -40,7 +36,7 @@ export const authOptions: NextAuthOptions = {
 
           try {
             const existingUser = await UserModel.findOne({email: credentials.email, role: credentials.identifier});
-            if(!existingUser)  throw new Error ("No user found with this email or username");
+            if(!existingUser)  throw new Error ("No user found with this credentials");
 
             const isPasswordCorrect = await bcrypt.compare(credentials.password, existingUser.password as string);
             if(isPasswordCorrect) return existingUser;
@@ -61,6 +57,12 @@ export const authOptions: NextAuthOptions = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async signIn({user, account}: {user: any, account: any}){
         await dbConnect();
+
+        // For credentials provider, user already exists and was validated in authorize()
+        // Skip user creation logic to avoid duplicate key errors
+        if (account?.provider === "credentials") {
+            return true;
+        }
 
         // Extract role from cookie (set before calling signIn from client)
         // Client should set cookie before signIn: document.cookie = "authRole=WORKER; path=/"
@@ -98,7 +100,7 @@ export const authOptions: NextAuthOptions = {
             role: role,
             email: user.email,
             name: user.name,
-            avatar: user.avatar,
+            avatar: user.image,
           })
           await existingUser.save();
         }
@@ -110,6 +112,12 @@ export const authOptions: NextAuthOptions = {
         // Store role in token if available from account (set in signIn callback)
         if (account?.role) {
             token.role = account.role;
+        }
+        // For credentials provider, get role from user object (from authorize function)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (user && account?.provider === "credentials" && (user as any).role) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            token.role = (user as any).role;
         }
         if (user) {
             token.email = user.email;
