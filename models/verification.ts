@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import {Verification} from '@/types/verification'
 
 const VerificationSchema = new mongoose.Schema<Verification>({
-    userId: {type: mongoose.Schema.Types.ObjectId, ref: "User", unique: true, required: true},
+    userEmail: {type: String, unique: true, required: true},
     isVerified: { type: Boolean, default: false },
     verificationToken: { type: String },
     isVerificationTokenExpired: { type: Boolean, default: false },

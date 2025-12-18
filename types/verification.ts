@@ -1,7 +1,7 @@
-import mongoose from "mongoose";
+
 
 export interface Verification {
-    userId: mongoose.Types.ObjectId;
+    userEmail: string;
     isVerified?: boolean;
     verificationToken?: string;
     isVerificationTokenExpired?: boolean;

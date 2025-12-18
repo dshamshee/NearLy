@@ -27,7 +27,7 @@ export const authOptions: NextAuthOptions = {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         async authorize(credentials: any): Promise<any>{
           await dbConnect();
-          console.log('credentials', credentials)
+          // console.log('credentials', credentials)
 
           // Check if all the credentials are not provided then throw an error
           if(!credentials?.email || !credentials?.password || !credentials?.identifier){

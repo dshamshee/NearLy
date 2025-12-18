@@ -20,19 +20,23 @@ import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { signIn, useSession } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import { toast } from "sonner";
 import { FcGoogle } from "react-icons/fc";
 import { signInWithRole } from "@/utils/authHelpers";
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
+
+
 
 
 export default function LoginPage() {
-  const { data: session } = useSession();
-  console.log("session in login page", session);
+  // const { data: session } = useSession();
+  // console.log("session in login page", session);
 
     const router = useRouter();
     const [role, setRole] = useState<"CUSTOMER" | "WORKER" | "ADMIN">("CUSTOMER");
+    const [isLoading, setIsLoading] = useState<boolean>(false);
 
     const form = useForm<zodLoginType>({
         resolver: zodResolver(zodLogin),
@@ -44,23 +48,28 @@ export default function LoginPage() {
       });
     
       const onSubmit = async (data: zodLoginType) => {
+        setIsLoading(true);
         try {
           const result = await signIn('credentials', {
             email: data.email,
             password: data.password,
             identifier: data.identifier,
             callbackUrl: "/",
+            redirect: false, // Prevent automatic redirect on error
           });
 
           if (result?.error) {
             toast.error(result.error || "Login failed");
+            setIsLoading(false);
           } else if (result?.ok) {
             toast.success("Login successful");
+            setIsLoading(false);
             router.push("/");
           }
         } catch (error) {
           toast.error("An error occurred during login");
           console.error("Login error:", error);
+          setIsLoading(false);
         }
       };
 
@@ -135,8 +144,10 @@ export default function LoginPage() {
           </FieldSet>
 
             
-             <Button className="w-full mt-4 cursor-pointer text-md bg-orange-500 hover:bg-orange-600 text-white" type="submit">
-                Login
+             <Button disabled={isLoading} className="w-full mt-4 cursor-pointer text-md bg-orange-500 hover:bg-orange-600 text-white" type="submit">
+                {
+                  isLoading ? <Loader2 className="size-4 animate-spin" /> : <span>Login</span>
+                }
               </Button>
           </form>
 
