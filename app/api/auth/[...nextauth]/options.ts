@@ -142,7 +142,9 @@ export const authOptions: NextAuthOptions = {
 
         return Promise.resolve(session);
       },
-  }
+  },
+
+
 };
 
 export async function GetServerSessionHere() {

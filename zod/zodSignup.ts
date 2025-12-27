@@ -12,7 +12,11 @@ export const zodSignup = z.object({
     email: z.email({message: "Invalid email address"}),
     verificationCode: z.string().min(6, {message: "Verification code must be 6 characters"}).max(6, {message: "Verification code must be 6 characters"}),
     password: passwordValidator,
+    confirmPassword: passwordValidator,
     identifier: z.enum(["CUSTOMER", "WORKER", "ADMIN"], {message: "Invalid identifier"}),
+}).refine((data) => data.password === data.confirmPassword, {
+    message: "Password mismatch",
+    path: ["confirmPassword"],
 })
 
 export type zodSignupType = z.infer<typeof zodSignup>

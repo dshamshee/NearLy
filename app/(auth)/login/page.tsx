@@ -1,17 +1,17 @@
-"use client"
+"use client";
 import {
-    Field,
-    FieldError,
-    FieldGroup,
-    FieldLabel,
-    FieldSet,
-  } from "@/components/ui/field";
-  import { Label } from "@/components/ui/label";
-  import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldSet,
+} from "@/components/ui/field";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { zodLogin, zodLoginType } from "@/zod/zodLogin";
-import { useRouter } from "next/navigation"
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -20,88 +20,87 @@ import { toast } from "sonner";
 import { FcGoogle } from "react-icons/fc";
 import { signInWithRole } from "@/utils/authHelpers";
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
-
-
-
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   // const { data: session } = useSession();
   // console.log("session in login page", session);
 
-    const router = useRouter();
-    const [role, setRole] = useState<"CUSTOMER" | "WORKER">("CUSTOMER");
-    const [isLoading, setIsLoading] = useState<boolean>(false);
+  const router = useRouter();
+  const [role, setRole] = useState<"CUSTOMER" | "WORKER">("CUSTOMER");
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-    const form = useForm<zodLoginType>({
-        resolver: zodResolver(zodLogin),
-        defaultValues: {
-          email: "",
-          password: "",
-          identifier: "CUSTOMER",
-        },
+  const form = useForm<zodLoginType>({
+    resolver: zodResolver(zodLogin),
+    defaultValues: {
+      email: "",
+      password: "",
+      identifier: "CUSTOMER",
+    },
+  });
+
+  const onSubmit = async (data: zodLoginType) => {
+    try {
+    setIsSubmitting(true);
+      const result = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
+        identifier: data.identifier,
+        redirect: false, // Prevent automatic redirect on error
       });
-    
-      const onSubmit = async (data: zodLoginType) => {
-        setIsLoading(true);
-        try {
-          const result = await signIn('credentials', {
-            email: data.email,
-            password: data.password,
-            identifier: data.identifier,
-            callbackUrl: "/",
-            redirect: false, // Prevent automatic redirect on error
-          });
 
-          if (result?.error) {
-            toast.error(result.error || "Login failed");
-            setIsLoading(false);
-          } else if (result?.ok) {
-            toast.success("Login successful");
-            setIsLoading(false);
-            router.push("/");
-          }
-        } catch (error) {
-          toast.error("An error occurred during login");
-          console.error("Login error:", error);
-          setIsLoading(false);
-        }
-      };
+      if(result?.ok){
+        toast.success("Login Successful");
+        router.push("/");
+      } else toast.error(result?.error || "Login Failed");
+      
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Something went wrong");
+    } finally{
+      setIsSubmitting(false);
+    }
+  };
 
-      const loginWithGoogle = async()=>{
-        // console.log("role", role);
-        try {
-            await signInWithRole("google", role, "/");
-        } catch (error) {
-            toast.error("An error occurred during login");
-            console.error("Login error:", error);
-        }
-      }
-
-
-
+  const loginWithGoogle = async () => {
+    // console.log("role", role);
+    try {
+      await signInWithRole("google", role, "/");
+    } catch (error) {
+      toast.error("An error occurred during login");
+      console.error("Login error:", error);
+    }
+  };
 
   return (
     <div className="mainContainer min-h-screen p-4 flex flex-col items-center justify-center bg-background">
-      
-        <h1 className="text-2xl font-bold text-foreground">
-          Welcome to <span className="text-muted-foreground">Near</span>
-          <span className="text-orange-500">Ly</span>
-        </h1>
-        <div className="flex flex-col gap-2 w-full max-w-md border-2 border-border justify-center items-center mt-4 p-4 rounded-md">
-          <p className="text-sm text-muted-foreground">
-            Please login to your account
-          </p>
+      <h1 className="text-2xl font-bold text-foreground">
+        Welcome to <span className="text-muted-foreground">Near</span>
+        <span className="text-orange-500">Ly</span>
+      </h1>
+      <div className="flex flex-col gap-2 w-full max-w-md border-2 border-border justify-center items-center mt-4 p-4 rounded-md">
+        <p className="text-sm text-muted-foreground">
+          Please login to your account
+        </p>
 
-          <form onSubmit={(e) => {e.preventDefault(); form.handleSubmit(onSubmit)(e)}} className="w-full">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit(onSubmit)(e);
+          }}
+          className="w-full"
+        >
           <FieldSet className="w-full">
             <FieldGroup>
-
-            <Field>
-                <RadioGroup onValueChange={(value) => {
-                  form.setValue("identifier", value as "CUSTOMER" | "WORKER");
-                  setRole(value as "CUSTOMER" | "WORKER");
-                }} className="flex flex-row gap-2 mt-4 items-center justify-center" defaultValue="CUSTOMER">
+              <Field>
+                <RadioGroup
+                  onValueChange={(value) => {
+                    form.setValue("identifier", value as "CUSTOMER" | "WORKER");
+                    setRole(value as "CUSTOMER" | "WORKER");
+                  }}
+                  className="flex flex-row gap-2 mt-4 items-center justify-center"
+                  defaultValue="CUSTOMER"
+                >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="CUSTOMER" id="CUSTOMER" />
                     <Label htmlFor="CUSTOMER">Customer</Label>
@@ -122,35 +121,89 @@ export default function LoginPage() {
 
               <Field>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
-                <Input {...form.register("email")} id="email" type="text" placeholder="example@gmail.com" />
-              <FieldError errors={form.formState.errors.email?.message ? [{ message: form.formState.errors.email?.message }] : undefined}></FieldError>
+                <Input
+                  {...form.register("email")}
+                  id="email"
+                  type="text"
+                  placeholder="example@gmail.com"
+                />
+                <FieldError
+                  errors={
+                    form.formState.errors.email?.message
+                      ? [{ message: form.formState.errors.email?.message }]
+                      : undefined
+                  }
+                ></FieldError>
               </Field>
               <Field>
                 <FieldLabel htmlFor="password">Password</FieldLabel>
-                <Input {...form.register("password")} id="password" type="password" placeholder="••••••••" />
-              <FieldError errors={form.formState.errors.password?.message ? [{ message: form.formState.errors.password?.message }] : undefined}></FieldError>
+                <div className="relative">
+                  <Input
+                    {...form.register("password")}
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                <FieldError
+                  errors={
+                    form.formState.errors.password?.message
+                      ? [{ message: form.formState.errors.password?.message }]
+                      : undefined
+                  }
+                ></FieldError>
 
-              <p className="text-sm text-muted-foreground"><Link href="/forgot-password" className="text-primary hover:underline">Forgot password?</Link></p>
+                <p className="text-sm text-muted-foreground">
+                  <Link
+                    href="/forgot-password"
+                    className="text-primary hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                </p>
               </Field>
-
             </FieldGroup>
           </FieldSet>
 
-            
-             <Button disabled={isLoading} className="w-full mt-4 cursor-pointer text-md bg-orange-500 hover:bg-orange-600 text-white" type="submit">
-                {
-                  isLoading ? <Loader2 className="size-4 animate-spin" /> : <span>Login</span>
-                }
-              </Button>
-          </form>
+          <Button
+            disabled={isSubmitting}
+            className="w-full mt-4 cursor-pointer text-md bg-orange-500 hover:bg-orange-600 text-white"
+            type="submit"
+          >
+            {isSubmitting ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <span>Login</span>
+            )}
+          </Button>
+        </form>
 
-              <Button className="w-full mt-1 cursor-pointer bg-white text-black border-2 border-border hover:bg-gray-100" onClick={loginWithGoogle}>
-              <FcGoogle className="size-6"/>
-                <span className="text-md">Login with Google</span>
-              </Button>
-              <p className="text-sm text-muted-foreground mt-2 text-center">Don&apos;t have an account? <Link href="/signup" className="text-blue-500 hover:underline">Sign up</Link></p>
-        </div>
-   
+        <Button
+          className="w-full mt-1 cursor-pointer bg-white text-black border-2 border-border hover:bg-gray-100"
+          onClick={loginWithGoogle}
+        >
+          <FcGoogle className="size-6" />
+          <span className="text-md">Login with Google</span>
+        </Button>
+        <p className="text-sm text-muted-foreground mt-2 text-center">
+          Don&apos;t have an account?{" "}
+          <Link href="/signup" className="text-blue-500 hover:underline">
+            Sign up
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

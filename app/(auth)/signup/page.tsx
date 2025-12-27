@@ -15,14 +15,19 @@ import { zodSignup, zodSignupType } from "@/zod/zodSignup";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 
 
 export default function SignupPage() {
     const router = useRouter();
     const [isHidden, setIsHidden] = useState<boolean>(true);
+    const [verificationLoading, setVerificationLoading] = useState<boolean>(false);
+    const [showPassword, setShowPassword] = useState<boolean>(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const form = useForm<zodSignupType>({
     resolver: zodResolver(zodSignup),
@@ -31,41 +36,52 @@ export default function SignupPage() {
       email: "",
       verificationCode: "",
       password: "",
+      confirmPassword: "",
       identifier: "CUSTOMER",
     },
   });
 
   const onSubmit = async (data: zodSignupType) => {
     try {
+      setIsSubmitting(true);
       const response = await axios.post('/api/signup', data);
       if(response.data.success){
         toast.success(response.data.message);
         router.push('/');
-      }else {
-        toast.error(response.data.message);
       }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      toast.error(error.response.data.message || "An error occurred during signup");
-      console.error("Signup error:", error);
+ 
+    } catch (error) {
+      if(error instanceof AxiosError) toast.error(error.response?.data.message || "An error occurred during signup");
+      else toast.error("Something went wrong");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
 
   const handleVerification = async ()=>{
+   try {
+    setVerificationLoading(true);
     const response = await axios.post('/api/email-verification', {
       email: form.getValues('email'),
       name: form.getValues('name'),
     })
     if(response.data.success){
       setIsHidden(false);
+      setVerificationLoading(false);
       toast.success(response.data.message);
     }
     else{
       toast.error(response.data.message);
-      console.log(response.data.error);
       setIsHidden(true);
     }
+   } catch (error) {
+    if(error instanceof AxiosError)
+    toast.error(error.response?.data.message || "An error occurred during verification");
+  else toast.error("Something went wrong");
+   } finally {
+    setVerificationLoading(false);
+   }
   }
 
   return (
@@ -131,7 +147,7 @@ export default function SignupPage() {
                 <div className="flex flex-row items-center justify-between">
                 <FieldLabel htmlFor="email">Email</FieldLabel>
                 <button type="button" className="text-sm mr-4 text-muted-foreground hover:text-orange-500 cursor-pointer" onClick={handleVerification}>
-                    {isHidden ? "Verify" : "Resend Code"}
+                  {verificationLoading ? <Loader2 className="size-4 animate-spin" /> : (isHidden ? "Verify" : "Resend Code")}
                 </button>
                 </div>
                 <Input
@@ -167,16 +183,60 @@ export default function SignupPage() {
               </Field>
               <Field>
                 <FieldLabel htmlFor="password">Password</FieldLabel>
-                <Input
-                  {...form.register("password")}
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                />
+                <div className="relative">
+                  <Input
+                    {...form.register("password")}
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
                 <FieldError
                   errors={
                     form.formState.errors.password?.message
                       ? [{ message: form.formState.errors.password?.message }]
+                      : undefined
+                  }
+                ></FieldError>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="confirmPassword">Confirm Password</FieldLabel>
+                <div className="relative">
+                  <Input
+                    {...form.register("confirmPassword")}
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                <FieldError
+                  errors={
+                    form.formState.errors.confirmPassword?.message
+                      ? [{ message: form.formState.errors.confirmPassword?.message }]
                       : undefined
                   }
                 ></FieldError>
@@ -187,8 +247,9 @@ export default function SignupPage() {
           <Button
             className="w-full mt-4 cursor-pointer text-md bg-orange-500 hover:bg-orange-600 text-white"
             type="submit"
+            disabled={isSubmitting}
           >
-            Signup
+            {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : "Signup"}
           </Button>
         </form>
         <p className="text-sm text-muted-foreground mt-2 text-center">
