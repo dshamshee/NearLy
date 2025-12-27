@@ -32,7 +32,7 @@ export async function signInWithRole(
   
   // Call NextAuth signIn with redirect: false to handle response manually
   const result = await signIn(provider, {
-    // callbackUrl: callbackUrl || "/",
+    callbackUrl: callbackUrl || "/",
     redirect: false,
   });
 

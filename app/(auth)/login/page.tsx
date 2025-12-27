@@ -6,13 +6,8 @@ import {
     FieldLabel,
     FieldSet,
   } from "@/components/ui/field";
-  import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-  } from "@/components/ui/select";
+  import { Label } from "@/components/ui/label";
+  import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { zodLogin, zodLoginType } from "@/zod/zodLogin";
@@ -35,7 +30,7 @@ export default function LoginPage() {
   // console.log("session in login page", session);
 
     const router = useRouter();
-    const [role, setRole] = useState<"CUSTOMER" | "WORKER" | "ADMIN">("CUSTOMER");
+    const [role, setRole] = useState<"CUSTOMER" | "WORKER">("CUSTOMER");
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
     const form = useForm<zodLoginType>({
@@ -103,29 +98,27 @@ export default function LoginPage() {
             <FieldGroup>
 
             <Field>
-              <FieldLabel htmlFor="identifier">Role</FieldLabel>
-              <Select
-                value={form.watch("identifier")}
-                onValueChange={(value) =>{
-                    form.setValue(
-                        "identifier",
-                        value as "CUSTOMER" | "WORKER" | "ADMIN"
-                      )
-                      setRole(value as "CUSTOMER" | "WORKER" | "ADMIN");
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a role" />
-                </SelectTrigger>
-                <SelectContent>
-                    {/* <SelectItem value="selectStatus">Select Status...</SelectItem> */}
-                  <SelectItem value="CUSTOMER">Customer</SelectItem>
-                  <SelectItem value="WORKER">Worker</SelectItem>
-                  <SelectItem value="ADMIN">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-              <FieldError errors={form.formState.errors.identifier?.message ? [{ message: form.formState.errors.identifier?.message }] : undefined}></FieldError>
-            </Field>
+                <RadioGroup onValueChange={(value) => {
+                  form.setValue("identifier", value as "CUSTOMER" | "WORKER");
+                  setRole(value as "CUSTOMER" | "WORKER");
+                }} className="flex flex-row gap-2 mt-4 items-center justify-center" defaultValue="CUSTOMER">
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="CUSTOMER" id="CUSTOMER" />
+                    <Label htmlFor="CUSTOMER">Customer</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="WORKER" id="WORKER" />
+                    <Label htmlFor="WORKER">Worker</Label>
+                  </div>
+                </RadioGroup>
+                <FieldError
+                  errors={
+                    form.formState.errors.identifier?.message
+                      ? [{ message: form.formState.errors.identifier?.message }]
+                      : undefined
+                  }
+                ></FieldError>
+              </Field>
 
               <Field>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
