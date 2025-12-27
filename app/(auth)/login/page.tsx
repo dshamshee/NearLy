@@ -19,8 +19,9 @@ import { signIn } from "next-auth/react";
 import { toast } from "sonner";
 import { FcGoogle } from "react-icons/fc";
 import { signInWithRole } from "@/utils/authHelpers";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+
 
 export default function LoginPage() {
   // const { data: session } = useSession();
@@ -30,6 +31,57 @@ export default function LoginPage() {
   const [role, setRole] = useState<"CUSTOMER" | "WORKER">("CUSTOMER");
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  // Check for error in URL parameters after OAuth redirect completes
+  useEffect(() => {
+    // Wait for component to be fully mounted and Toaster to be ready
+    const timeoutId = setTimeout(() => {
+      if (typeof window === "undefined") return;
+      
+      const params = new URLSearchParams(window.location.search);
+      const error = params.get("error");
+      
+      if (error) {
+        console.log("Error detected in URL:", error);
+        
+        // NextAuth uses "AccessDenied" error code when signIn callback throws an error
+        if (error === "AccessDenied") {
+          console.log("Showing AccessDenied toast");
+          // Use a small delay to ensure Toaster is ready
+          setTimeout(() => {
+            toast.error("User already exists with a different role.", {
+              duration: 5000,
+              position: "top-center",
+              description: "Please select the correct role or use email/password login. If you are a new user, please sign up with the correct role.",
+            });
+          }, 50);
+        } else {
+          // Handle other NextAuth errors
+          const errorMessages: Record<string, string> = {
+            "Configuration": "There is a problem with the server configuration.",
+            "Verification": "The verification token has expired or has already been used.",
+            "Default": "Something went wrong. Please check your details and try again.",
+          };
+          const errorMessage = errorMessages[error] || errorMessages["Default"];
+          console.log("Showing error toast:", errorMessage);
+          setTimeout(() => {
+            toast.error(errorMessage, {
+              duration: 5000,
+              position: "top-center",
+              className: "text-center",
+            });
+          }, 50);
+        }
+        
+        // Clean up URL by removing error parameter
+        params.delete("error");
+        const newUrl = window.location.pathname + (params.toString() ? `?${params.toString()}` : "");
+        window.history.replaceState({}, "", newUrl);
+      }
+    }, 300); // Wait 300ms for everything to be ready
+    
+    return () => clearTimeout(timeoutId);
+  }, []);
 
   const form = useForm<zodLoginType>({
     resolver: zodResolver(zodLogin),
@@ -66,9 +118,9 @@ export default function LoginPage() {
     // console.log("role", role);
     try {
       await signInWithRole("google", role, "/");
+      // Errors will be handled via URL parameters in useEffect
     } catch (error) {
-      toast.error("An error occurred during login");
-      console.error("Login error:", error);
+      toast.error( error instanceof Error ? error.message : "An error occurred during login");
     }
   };
 

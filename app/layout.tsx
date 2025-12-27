@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NearLy - Local Workers on Demand",
+  title: "NearLy - Local Services on Demand",
   description: `Stop searching and start fixing. NearLy instantly connects you with trusted, local professionals right when you need them. Whether it's a plumbing emergency, an electrical fix, or general labor, help is just around the corner.
 We bring the speed and convenience of ride-sharing to home services. Just open the app, drop a pin, and find skilled workers in your immediate vicinity ready to tackle the job.`,
 };

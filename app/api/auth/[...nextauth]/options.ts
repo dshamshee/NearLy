@@ -52,6 +52,10 @@ export const authOptions: NextAuthOptions = {
   ],
 
 
+  pages: {
+    error: "/login", // Redirect errors to login page
+  },
+
   callbacks: {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -94,17 +98,30 @@ export const authOptions: NextAuthOptions = {
             role = "CUSTOMER";
         }
 
-        let existingUser = await UserModel.findOne({email: user.email, role})
-        if(!existingUser){
-          existingUser = await UserModel.create({
-            role: role,
-            email: user.email,
-            name: user.name,
-            avatar: user.image,
-          })
-          await existingUser.save();
-        }
+        // Check if user exists with the exact email AND role
+        let existingUser = await UserModel.findOne({email: user.email, role});
         
+        if(existingUser){
+          // User exists with same email and role, proceed with sign in
+          return true;
+        }
+
+        // Check if user exists with the same email but different role
+        const userWithDifferentRole = await UserModel.findOne({email: user.email});
+        if(userWithDifferentRole){
+          // User exists with this email but different role, restrict creation
+          throw new Error("User already exists with a different role");
+        }
+
+        // No user exists with this email, create new user
+        existingUser = await UserModel.create({
+          role: role,
+          email: user.email,
+          name: user.name,
+          avatar: user.image,
+        });
+        await existingUser.save();
+
         return true;
     },
 
