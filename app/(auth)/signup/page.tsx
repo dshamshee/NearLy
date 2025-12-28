@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { zodSignup, zodSignupType } from "@/zod/zodSignup";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios, { AxiosError } from 'axios'
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -23,12 +23,28 @@ import { Loader2, Eye, EyeOff } from "lucide-react";
 
 export default function SignupPage() {
     const router = useRouter();
-    const [isHidden, setIsHidden] = useState<boolean>(true);
-    const [verificationLoading, setVerificationLoading] = useState<boolean>(false);
-    const [showPassword, setShowPassword] = useState<boolean>(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
-    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const [isHidden, setIsHidden] = useState<boolean>(true); // For Hide OTP Input Field
+    const [verificationLoading, setVerificationLoading] = useState<boolean>(false); // For Loading State of Email Verification Code
+    const [showPassword, setShowPassword] = useState<boolean>(false); // For Show Password Input Field
+    const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false); // For Show Confirm Password Input Field
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false); // For Loading State of Signup Form
+    const [timer, setTimer] = useState<number>(90); // For Timer of Resend Email Verification Code
+    const [isVerificationDisabled, setIsVerificationDisabled] = useState<boolean>(false); // For Disable Resend Email Verification Code Button
 
+    // Timer for Resend Email Verification Code
+    useEffect(()=>{
+      const interval =setInterval(()=>{
+        if(timer > 0){
+          setTimer(timer - 1);
+        } else {
+          setIsVerificationDisabled(false);
+        }
+      }, 1000);
+      return ()=> clearInterval(interval);
+    }, [timer])
+
+
+    // Signup Form Initialization and Validation with Zod
   const form = useForm<zodSignupType>({
     resolver: zodResolver(zodSignup),
     defaultValues: {
@@ -41,6 +57,7 @@ export default function SignupPage() {
     },
   });
 
+  // Signup Form Submission
   const onSubmit = async (data: zodSignupType) => {
     try {
       setIsSubmitting(true);
@@ -59,8 +76,11 @@ export default function SignupPage() {
   };
 
 
+  // Sending Email Verification Code
   const handleVerification = async ()=>{
    try {
+    setIsVerificationDisabled(true);
+    setTimer(90);
     setVerificationLoading(true);
     const response = await axios.post('/api/email-verification', {
       email: form.getValues('email'),
@@ -146,8 +166,10 @@ export default function SignupPage() {
               <Field>
                 <div className="flex flex-row items-center justify-between">
                 <FieldLabel htmlFor="email">Email</FieldLabel>
-                <button type="button" className="text-sm mr-4 text-muted-foreground hover:text-orange-500 cursor-pointer" onClick={handleVerification}>
-                  {verificationLoading ? <Loader2 className="size-4 animate-spin" /> : (isHidden ? "Verify" : "Resend Code")}
+                <button type="button" disabled={isVerificationDisabled} className="text-sm mr-4 text-muted-foreground hover:text-orange-500 cursor-pointer" onClick={handleVerification}>
+                  {verificationLoading ? <Loader2 className="size-4 animate-spin" /> : (isHidden ? "Verify" : <div>
+                    {timer > 0 ? `Resend in ${timer}s` : "Resend Code"}
+                  </div> )}
                 </button>
                 </div>
                 <Input
@@ -245,9 +267,9 @@ export default function SignupPage() {
           </FieldSet>
 
           <Button
-            className="w-full mt-4 cursor-pointer text-md bg-orange-500 hover:bg-orange-600 text-white"
+            className={`w-full mt-4 cursor-pointer text-md bg-orange-500 hover:bg-orange-600 text-white ${isHidden ? "cursor-not-allowed" : ""}`}
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isHidden}
           >
             {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : "Signup"}
           </Button>

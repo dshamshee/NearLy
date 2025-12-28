@@ -10,7 +10,7 @@ const passwordValidator = z
 
 export const zodLogin = z.object({
     email: z.email({message: "Invalid email address"}),
-    password: passwordValidator,
+    password: z.string(),
     identifier: z.enum(["CUSTOMER", "WORKER", "ADMIN"], {message: "Invalid identifier"}),
 })
 
