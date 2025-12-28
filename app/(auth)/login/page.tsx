@@ -70,7 +70,7 @@ export default function LoginPage() {
               position: "top-center",
               className: "text-center",
             });
-          }, 50);
+          }, 500);
         }
         
         // Clean up URL by removing error parameter

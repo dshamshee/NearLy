@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import SessionWrapper from "@/providers/sessionWrapper";
 import { Toaster } from "sonner";
+import { NavigationBar } from "@/components/navbar";
 
 
 const geistSans = Geist({
@@ -39,6 +40,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <SessionWrapper>
+            <NavigationBar />
           {children}
           <Toaster />
           </SessionWrapper>
