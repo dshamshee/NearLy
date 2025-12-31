@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 export interface Customer {
     userId: mongoose.Types.ObjectId;
-    phone: string;
+    // phone: string;
     longitude?: number;
     latitude?: number;
     currentBookingId?: mongoose.Types.ObjectId;

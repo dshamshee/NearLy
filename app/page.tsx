@@ -20,7 +20,7 @@ export default function Home() {
         <Searching />
       </div>
 
-      <Map />
+      {/* <Map /> */}
     </div>
   );
 }

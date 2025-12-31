@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import SessionWrapper from "@/providers/sessionWrapper";
 import { Toaster } from "sonner";
 import { NavigationBar } from "@/components/navbar";
+import { GetServerSessionHere } from "./api/auth/[...nextauth]/options";
 
 
 const geistSans = Geist({
@@ -23,11 +24,15 @@ export const metadata: Metadata = {
 We bring the speed and convenience of ride-sharing to home services. Just open the app, drop a pin, and find skilled workers in your immediate vicinity ready to tackle the job.`,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
+  const session = await GetServerSessionHere();
+
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -40,6 +45,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <SessionWrapper>
+            {/* {
+              session ? <NavigationBar /> : null
+            } */}
             <NavigationBar />
           {children}
           <Toaster />

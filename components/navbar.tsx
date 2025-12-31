@@ -1,5 +1,4 @@
 "use client";
-import React from "react";
 import {
   Navbar,
   NavBody,
@@ -13,7 +12,7 @@ import {
 } from "@/components/ui/resizable-navbar";
 import { useState } from "react";
 import { useTheme } from "next-themes";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -21,10 +20,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import { signOut } from "next-auth/react";
+
 
 export function NavigationBar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { theme, setTheme } = useTheme();
+  const {data: session} = useSession();
+  const router = useRouter();
+  console.log(session)
 
   const navItems = [
     {
@@ -79,7 +87,39 @@ export function NavigationBar() {
               </DropdownMenuContent>
             </DropdownMenu>
           </NavbarButton>
-          <NavbarButton variant="secondary">Login</NavbarButton>
+          <NavbarButton variant="secondary">
+            {
+              session ? ( 
+                <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+          <Button variant="outline" className="rounded-full w-full" size="icon">
+
+                {
+                  session?.user?.avatar ? (
+                    <Image src={session?.user?.avatar || ""} alt="avatar" width={40} height={40} className="rounded-full object-cover" />
+                  ) : (
+                    <UserIcon className="h-[1.8rem] w-[1.8rem]" />
+                  )
+                }
+                  <span className="sr-only">Profile</span>
+
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem disabled>
+                  {session?.user?.name}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={()=> router.push(`/c/profile/${session?.user?._id}`)} >
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={()=> signOut({ callbackUrl: "/" })}>
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+               ): (<Button variant="secondary" onClick={() => router.push("/login")}>Login</Button>)
+            }
+          </NavbarButton>
 
         </div>
       </NavBody>

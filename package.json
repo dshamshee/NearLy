@@ -23,6 +23,7 @@
     "@react-email/render": "^2.0.0",
     "@tabler/icons-react": "^3.36.0",
     "@types/google.maps": "^3.58.1",
+    "@vis.gl/react-google-maps": "^1.7.1",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
