@@ -130,6 +130,21 @@ export default async function CustomerProfile({
               </div>
             </div>
 
+            {/* Wallet Balance */}
+            {/* <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+              <div className="w-full sm:w-48 shrink-0">
+                <span className="text-sm font-medium text-muted-foreground">
+                  Wallet Balance
+                </span>
+              </div>
+              <Separator orientation="vertical" className="hidden sm:block h-6" />
+              <div className="flex-1">
+                <span className="inline-flex items-center px-3 py-1 rounded-md bg-secondary text-secondary-foreground text-sm font-medium">
+                  {customer.walletBalance}
+                </span>
+              </div>
+            </div> */}
+
             {customer.createdAt && (
               <>
                 <Separator />
