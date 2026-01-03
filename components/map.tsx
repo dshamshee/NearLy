@@ -17,8 +17,8 @@ export const Map = ()=>{
         const { Map } = await importLibrary('maps');
         
         const position = {
-            lat: 43.642693,
-            lng: -79.387118,
+            lat: 22.2887,
+            lng: 73.3634,
         }
 
         // init a marker 
