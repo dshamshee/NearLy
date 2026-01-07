@@ -24,16 +24,17 @@ export default function Home() {
 
       <div className="flex flex-row gap-4 md:gap-8 items-center justify-center mt-4">
         {/* <Button variant="default" size="lg" >Find a Worker</Button> */}
-        <ScrollingButton text="Find a Worker" />
+        {/* <ScrollingButton text="Get Started" /> */}
+        <Button variant="default" size="lg" ><Link href={'/c/dashboard'}>Get Started</Link></Button>
         <Button variant="outline" size="default" ><Link href={'/login'}>Join as a Professional</Link></Button>
       </div>
       </div>
-      <div id="searching" className="flex flex-col md:flex-row gap-10 md:gap-20 md:p-8 p-4 bg-accent items-center justify-center mt-10">
+      {/* <div id="searching" className="flex flex-col md:flex-row gap-10 md:gap-20 md:p-8 p-4 bg-accent items-center justify-center mt-10">
         <Searching />
         <div className="w-full h-full">
       <Map />
         </div>
-      </div>
+      </div> */}
 
     </div>
   );

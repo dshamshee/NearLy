@@ -6,6 +6,9 @@ import { cookies } from "next/headers";
 import dbConnect from "@/utils/dbConnection";
 import bcrypt from "bcryptjs";
 import UserModel from "@/models/user";
+import WorkerModel from "@/models/worker";
+import CustomerModel from "@/models/customer";
+import AdminModel from "@/models/admin";
 
 export const authOptions: NextAuthOptions = {
   // Configure one or more authentication providers
@@ -109,6 +112,7 @@ export const authOptions: NextAuthOptions = {
         // Check if user exists with the same email but different role
         const userWithDifferentRole = await UserModel.findOne({email: user.email});
         if(userWithDifferentRole){
+          // console.log("I am here")
           // User exists with this email but different role, restrict creation
           throw new Error("User already exists with a different role");
         }
@@ -118,10 +122,34 @@ export const authOptions: NextAuthOptions = {
           role: role,
           email: user.email,
           name: user.name,
+          googleId: user.id,
           avatar: user.image,
         });
         await existingUser.save();
+        console.log("I am here 3")
 
+        // set db according to the role
+        if(role === "WORKER"){
+          // console.log("I am here 4")
+          await WorkerModel.create({
+            userId: existingUser._id,
+            isProfileCompleted: false,
+          })
+        } else if(role === "CUSTOMER"){
+          // console.log("I am here 5")
+          await CustomerModel.create({
+            userId: existingUser._id,
+          })
+        } else if(role === "ADMIN") {
+          // console.log("I am here 6")
+          await AdminModel.create({
+            userId: existingUser._id,
+          })
+        } else {
+          // console.log("I am here 2")
+          throw new Error("Invalid role");
+        }
+        // console.log("I am here 7")
         return true;
     },
 

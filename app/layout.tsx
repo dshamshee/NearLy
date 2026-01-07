@@ -30,7 +30,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
 
-  const session = await GetServerSessionHere();
+  // const session = await GetServerSessionHere();
 
 
   return (

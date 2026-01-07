@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 
 export interface Worker {
     userId: mongoose.Types.ObjectId;
-    phone: string;
     aadharNumber?: string;
     isAadharVerified?: boolean;
     isActive?: boolean;

@@ -53,7 +53,7 @@ export const Searching = () => {
       >
         <Field>
           <FieldLabel>Your Location</FieldLabel>
-          <Input type="text" placeholder="Choose your location" />
+          <Input className="bg-foreground/10" type="text" placeholder="Choose your location" />
           <FieldError
             errors={
               form.formState.errors.custLocation?.message
@@ -66,7 +66,7 @@ export const Searching = () => {
         <Field>
           <FieldLabel>Profession Needed</FieldLabel>
           <Select>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[180px] bg-foreground/10">
               <SelectValue placeholder="Select Profession" />
             </SelectTrigger>
             <SelectContent>
@@ -110,7 +110,7 @@ export const Searching = () => {
         </Field>
         <Field>
           <FieldLabel>Description</FieldLabel>
-          <Textarea placeholder="Describe the work needed" rows={4} />
+          <Textarea className="bg-foreground/10"  placeholder="Describe the work needed" rows={4} />
           <FieldError
             errors={
               form.formState.errors.workNeededDescription?.message
@@ -119,7 +119,7 @@ export const Searching = () => {
               }
             ></FieldError>
         </Field>
-        <Button type="submit" variant="outline">Find Professionals</Button>
+        <Button  type="submit" variant="default" className="cursor-pointer">Find Professionals</Button>
       </form>
     </div>
   );

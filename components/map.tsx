@@ -48,8 +48,7 @@ export const Map = ()=>{
     }, [])
 
     return (
-        <div>
-            <h1>Google Map</h1>
+        <div className="w-full">
             <div style={{width: '100%', height: '500px'}} className="rounded-lg overflow-hidden" ref={mapRef} />
       </div>
     );

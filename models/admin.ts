@@ -6,5 +6,10 @@ const AdminSchema = new mongoose.Schema<Admin>({
     phone: String,
 })
 
-const AdminModel = mongoose.models.Admin as mongoose.Model<Admin> || mongoose.model<Admin>("Admin", AdminSchema);
+let AdminModel: mongoose.Model<Admin>;
+if (mongoose.models.Admin) {
+  AdminModel = mongoose.models.Admin as mongoose.Model<Admin>;
+} else {
+  AdminModel = mongoose.model<Admin>("Admin", AdminSchema);
+}
 export default AdminModel;

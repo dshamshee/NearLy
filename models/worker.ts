@@ -4,8 +4,7 @@ import {Worker, WorkerProfessions} from '@/types/worker'
 
 const WorkerSchema = new mongoose.Schema<Worker>({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", unique: true, required: true },
-    phone: { type: String, unique: true },
-    aadharNumber: { type: String, unique: true },
+    aadharNumber: { type: String, unique: true, sparse: true },
     isAadharVerified: { type: Boolean, default: false },
     longitude: Number,
     latitude: Number,
@@ -22,6 +21,10 @@ const WorkerSchema = new mongoose.Schema<Worker>({
     totalEarnings: {type: Number, default: 0},
 })
 
-
-const WorkerModel = mongoose.models.Worker as mongoose.Model<Worker> || mongoose.model<Worker>("Worker", WorkerSchema);
+let WorkerModel: mongoose.Model<Worker>;
+if (mongoose.models.Worker) {
+  WorkerModel = mongoose.models.Worker as mongoose.Model<Worker>;
+} else {
+  WorkerModel = mongoose.model<Worker>("Worker", WorkerSchema);
+}
 export default WorkerModel;
