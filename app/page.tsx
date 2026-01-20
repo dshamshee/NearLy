@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards";
 import Image from "next/image";
+import { Footer } from "@/components/footer";
 
 export default function Home() {
   return (
@@ -42,7 +43,7 @@ export default function Home() {
 
       {/* Our Services */}
       <div className="services px-5 mt-20">
-        <h2 className="text-xl font-semibold md:ml-4 font-serif text-foreground">Our Services</h2>
+        {/* <h2 className="text-xl font-semibold md:ml-4 font-serif text-foreground">Our Services</h2> */}
         <div className=" rounded-md flex flex-col antialiased bg-white dark:bg-black dark:bg-grid-white/[0.05] items-center justify-center relative overflow-hidden">
           <InfiniteMovingCards
             items={services}
@@ -52,34 +53,61 @@ export default function Home() {
         </div>
       </div>
 
+      <hr className="my-10 dark:border-gray-700 border-gray-200"/>
 
       {/* Get Quick Help (This section showcase for customers interaction) */}
-      <div className="QuickHelp md:px-52 px-2 flex flex-row items-center justify-center gap-4 mt-20">
-        <div className="head">
-        <h1>Get Quick Help, Nearby you</h1>
-        <h2>In Nearly we ensure our customers get help quickly at the most afordable price. </h2>
-        <Button variant="default" size="lg">
-          <Link href={"/c/dashboard"}>Book a Service</Link>
+      <div className="QuickHelp px-3 flex flex-row items-center justify-between gap-4 mt-20">
+        <div className="head md:ml-28">
+        <h1 className="text-md md:text-3xl font-semibold">Get Professionals Nearby you</h1>
+        <h2 className="text-sm md:text-lg text-gray-500">Get the Professionals Nearby you, when you need it. <br /> <span className="hidden md:block"> We ensure our customers get help quickly at the most afordable price.</span></h2>
+        <Button variant="default" size="lg" className="mt-5">
+          <Link href={"/c/dashboard"}>Book a Service</Link> 
         </Button>
         </div>
 
-        <div className="img flex md:w-[50%] w-full flex-row md:gap-4 gap-2 justify-center p-3">
+        <div className="img flex w-[50%] flex-row md:gap-4 gap-2 justify-center p-3">
           <div className="1 flex flex-col md:gap-4 gap-2 mt-3 md:mt-5">
             {/* <Image src={"/getHelp4.jpg"} className=" rounded-2xl" alt="Quick Help" width={150} height={20} /> */}
             <Image src={"/getHelp1.jpg"} className=" rounded-xl" alt="Quick Help" width={200} height={100} />
-            <Image src={"/getHelp1.jpg"} className=" rounded-xl" alt="Quick Help" width={200} height={100} />
+            <Image src={"/getHelp2.jpg"} className=" rounded-xl border-2" alt="Quick Help" width={200} height={100} />
           </div>
           <div className="2 flex flex-col md:gap-4 gap-2">
-          <Image src={"/getHelp1.jpg"} className=" rounded-xl" alt="Quick Help" width={200} height={100} />
-          <Image src={"/getHelp1.jpg"} className=" rounded-xl" alt="Quick Help" width={200} height={100} />
+          <Image src={"/getHelp3.jpg"} className=" rounded-xl" alt="Quick Help" width={200} height={100} />
+          <Image src={"/getHelp4.jpg"} className=" rounded-xl" alt="Quick Help" width={200} height={100} />
             {/* <Image src={"/getHelp3.jpg"} className=" rounded-2xl" alt="Quick Help" width={150} height={100} /> */}
           </div>
         </div>
       </div>
 
-
+<hr className="my-10 dark:border-gray-700 border-gray-200"/>
       {/* Flexible Hour and High Earnings (This section showcase for workers interaction) */}
+      <div className="flex flex-row items-center justify-between gap-4">
 
+      <div className="img flex w-[50%] flex-row md:gap-4 gap-2 justify-center p-3">
+          <div className="1 flex flex-col md:gap-4 gap-2 ">
+            {/* <Image src={"/getHelp4.jpg"} className=" rounded-2xl" alt="Quick Help" width={150} height={20} /> */}
+            <Image src={"/Earning1.jpg"} className=" rounded-xl" alt="Quick Help" width={200} height={100} />
+            <Image src={"/Earning2.jpg"} className=" rounded-xl border-2" alt="Quick Help" width={200} height={100} />
+          </div>
+          <div className="2 flex flex-col md:gap-4 gap-2 mt-3 md:mt-5">
+          <Image src={"/Earning3.jpg"} className=" rounded-xl" alt="Quick Help" width={200} height={100} />
+          <Image src={"/Earning4.jpg"} className=" rounded-xl" alt="Quick Help" width={200} height={100} />
+            {/* <Image src={"/getHelp3.jpg"} className=" rounded-2xl" alt="Quick Help" width={150} height={100} /> */}
+          </div>
+        </div>
+
+
+        <div className="head md:mr-28 text-right mr-3">
+        <h1 className="text-md md:text-3xl font-semibold text-left">Flexible Hours, High Earnings</h1>
+        <h2 className="text-sm md:text-lg text-left text-gray-500"><span className="hidden md:block"> We ensure our workers get paid quickly and efficiently.</span>Work when you want, earn as much as you want. <br /> </h2>
+        <Button variant="default" size="lg" className="mt-5">
+          <Link href={"/c/dashboard"}>Start Earnings</Link> 
+        </Button>
+        </div>
+      </div>
+
+
+      <Footer />
       
     </div>
   );

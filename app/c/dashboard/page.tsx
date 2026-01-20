@@ -1,12 +1,27 @@
 'use client';
+import { findNearbyWorkers } from "@/actions/findNearbyWorkers";
 import { Map } from "@/components/map";
 import { RecentProfessionals } from "@/components/recentProfessionals";
 import { Searching } from "@/components/searching";
+import { zodSearchingType } from "@/zod/searching";
 import Image from "next/image";
 import { useState } from "react";
 
 export default function CustomerDashboard(){
     const [mapLoaded, setMapLoaded] = useState<boolean>(false);
+    const [bookingDetails, setBookingDetails] = useState<zodSearchingType | null>(null);
+    // const [nearbyWorkers, setNearbyWorkers] = useState
+    // console.log("bookingDetails", bookingDetails);
+
+    const getNearbyWorkers = async () => {
+        if(!bookingDetails) return;
+        const workers = await findNearbyWorkers(bookingDetails.custLocation.latitude, bookingDetails.custLocation.longitude);
+        console.log("workers", workers);
+    }
+
+    if(bookingDetails && mapLoaded){
+        getNearbyWorkers();
+    }
 
     return (
         <div className="mainContainer min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
@@ -17,13 +32,13 @@ export default function CustomerDashboard(){
                 <p className="text-lg text-gray-500">Get instant access to skilled professionals in your neighborhood.</p>
 
                 <div className="search mt-4 ">
-                    <Searching />
+                    <Searching setBookingDetails={setBookingDetails} bookingDetails={bookingDetails} setMapLoaded={setMapLoaded}/>
                 </div>
                 
             
             </div>
             <div className={`${mapLoaded ? 'hidden' : 'block'}`}>
-            <div className={`illustration relative flex items-center justify-center hidden md:block`}>
+            <div className={`illustration relative md:flex items-center justify-center hidden`}>
                 <Image src={'/custIllustration2.svg'} alt="Dashboard" width={600} height={600} className="relative z-0" />
                 <Image src={'/custIllustration1.svg'} alt="Dashboard" width={150} height={150} className="absolute z-20 top-1/7 left-1/5 -translate-x-1/2 -translate-y-1/2" />
             </div>
