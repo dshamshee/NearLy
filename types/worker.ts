@@ -1,10 +1,12 @@
 import mongoose from "mongoose";
+import { Decimal128 } from "mongodb";
 
 export interface Worker {
     userId: mongoose.Types.ObjectId;
     aadharNumber?: string;
     isAadharVerified?: boolean;
     isActive?: boolean;
+    serviceCharge?: number;
     isProfileCompleted?: boolean;
     profession: WorkerProfessions;
     otherProfession?: string;
@@ -15,8 +17,8 @@ export interface Worker {
     totalBookings?: number;
     totalEarnings?: number;
     currentBookingId?: mongoose.Types.ObjectId;
-    longitude?: number;
-    latitude?: number;
+    longitude?: Decimal128;
+    latitude?: Decimal128;
 }
 
 export enum WorkerProfessions {

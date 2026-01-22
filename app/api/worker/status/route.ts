@@ -2,14 +2,15 @@ import WorkerModel from "@/models/worker";
 import { Response } from "@/types/response";
 import dbConnect from "@/utils/dbConnection";
 import { NextRequest, NextResponse } from "next/server";
+import { Decimal128 } from "mongodb";
 
 
 export async function POST(request: NextRequest){
 
     try {
         await dbConnect();
-        const {workerId, status} = await request.json();
-        if(!workerId || !status) {
+        const {workerId, status, latitude, longitude} = await request.json();
+        if(!workerId || status === undefined) {
             return NextResponse.json<Response>({
                 success: false,
                 message: "Worker ID and status are required",
@@ -26,7 +27,11 @@ export async function POST(request: NextRequest){
             }, { status: 404 });
         }
 
-        worker.isActive = status === "ACTIVE" ? true : false;
+        worker.isActive = status;
+        if (latitude !== undefined && longitude !== undefined) {
+            worker.latitude = new Decimal128(latitude.toString().slice(0, 7));
+            worker.longitude = new Decimal128(longitude.toString().slice(0, 7));
+        }
         await worker.save();
 
         return NextResponse.json<Response>({

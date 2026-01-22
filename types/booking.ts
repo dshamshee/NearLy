@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { Decimal128 } from "mongodb";
 import { WorkerProfessions } from "./worker";
 
 export interface Bookings {
@@ -11,10 +12,10 @@ export interface Bookings {
     cancellationFee: number;
     workNeededDescription: string;
     workNeededProfession: WorkerProfessions;
-    customerLongitude: number;
-    customerLatitude: number;
-    workerLongitude: number;
-    workerLatitude: number;
+    customerLongitude: Decimal128;
+    customerLatitude: Decimal128;
+    workerLongitude: Decimal128;
+    workerLatitude: Decimal128;
     workerOutForWork: boolean;
     workerArrivedAtDestination: boolean;
     isWorkCompleted: boolean;

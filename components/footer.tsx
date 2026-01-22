@@ -38,7 +38,7 @@ export const Footer = () => {
 
             <div className="copyright flex flex-col items-center justify-center mt-10">
                 <p>Copyright © 2026 NearLy. All rights reserved.</p>
-                <p className="text-sm">Developed by <Link href="https://github.com/yourusername">Danish Shamshee</Link></p>
+                <p className="text-sm">Developed by <Link href="https://github.com/dshamshee" className="hover:text-blue-500">Danish Shamshee</Link></p>
             </div>
         </div>
     )

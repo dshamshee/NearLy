@@ -31,7 +31,7 @@ export function NavigationBar() {
   const { theme, setTheme } = useTheme();
   const { data: session } = useSession();
   const router = useRouter();
-  console.log(session);
+  // console.log(session);
 
   const navItems = [
     {

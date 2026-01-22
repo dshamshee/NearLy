@@ -6,6 +6,7 @@ import SessionWrapper from "@/providers/sessionWrapper";
 import { Toaster } from "sonner";
 import { NavigationBar } from "@/components/navbar";
 import { GetServerSessionHere } from "./api/auth/[...nextauth]/options";
+import { Footer } from "@/components/footer";
 
 
 const geistSans = Geist({
@@ -36,7 +37,7 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased `}
       >
         <ThemeProvider
           attribute="class"
@@ -50,6 +51,7 @@ export default async function RootLayout({
             } */}
             <NavigationBar />
           {children}
+          <Footer />
           <Toaster />
           </SessionWrapper>
         </ThemeProvider>
