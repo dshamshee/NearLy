@@ -5,7 +5,7 @@ import { RecentProfessionals } from "@/components/recentProfessionals";
 import { Searching } from "@/components/searching";
 import { zodSearchingType } from "@/zod/searching";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function CustomerDashboard(){
     const [mapLoaded, setMapLoaded] = useState<boolean>(false);
@@ -13,15 +13,15 @@ export default function CustomerDashboard(){
     // const [nearbyWorkers, setNearbyWorkers] = useState
     // console.log("bookingDetails", bookingDetails);
 
-    const getNearbyWorkers = async () => {
-        if(!bookingDetails) return;
-        const workers = await findNearbyWorkers(bookingDetails.custLocation.latitude, bookingDetails.custLocation.longitude);
-        console.log("workers", workers);
-    }
+    useEffect(() => {
+        const getNearbyWorkers = async () => {
+            if(!bookingDetails || !mapLoaded) return;
+            const workers = await findNearbyWorkers(bookingDetails.custLocation.latitude, bookingDetails.custLocation.longitude);
+            console.log("workers", workers);
+        }
 
-    if(bookingDetails && mapLoaded){
         getNearbyWorkers();
-    }
+    }, [bookingDetails, mapLoaded]);
 
     return (
         <div className="mainContainer min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
@@ -44,7 +44,7 @@ export default function CustomerDashboard(){
             </div>
             </div>
             <div className={`mapSection w-full h-full ${mapLoaded ? 'block' : 'hidden'}`}>
-                <Map />
+                <Map lat={bookingDetails?.custLocation.latitude ?? 0} lng={bookingDetails?.custLocation.longitude ?? 0} />
             </div>
 
             </div>

@@ -2,6 +2,8 @@
 
 import WorkerModel from "@/models/worker";
 import dbConnect from "@/utils/dbConnection"
+import { Decimal128 } from "mongodb";
+import mongoose from "mongoose";
 
 export async function findNearbyWorkers(latitude: number, longitude: number){
 
@@ -18,13 +20,39 @@ export async function findNearbyWorkers(latitude: number, longitude: number){
                 $gte: longitude - 0.05,
                 $lte: longitude + 0.05,
             },
-        })
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any).lean();
 
-        if(!workers) return null;
+        if(!workers || workers.length === 0) return null;
 
-        // const workersId = workers.map((worker)=> worker._id);
+        // Convert Mongoose documents to plain objects and handle special types
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const plainWorkers = workers.map((worker: any) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const plainWorker: any = {};
+            
+            // Copy all properties and convert special types
+            for (const key in worker) {
+                const value = worker[key];
+                
+                // Convert ObjectId to string
+                if (value instanceof mongoose.Types.ObjectId) {
+                    plainWorker[key] = value.toString();
+                }
+                // Convert Decimal128 to number
+                else if (value instanceof Decimal128 || (value && value.constructor && value.constructor.name === 'Decimal128')) {
+                    plainWorker[key] = parseFloat(value.toString());
+                }
+                // Keep other values as-is
+                else {
+                    plainWorker[key] = value;
+                }
+            }
+            
+            return plainWorker;
+        });
 
-        return workers;
+        return plainWorkers;
 
 
     } catch (error: unknown) {

@@ -3,17 +3,38 @@
 import { updateWorkerStatus } from "@/actions/updateWorkerStatus";
 import { Switch } from "@/components/ui/switch";
 import { Calendar, Clock, DollarSign, Briefcase, User, CheckCircle2, XCircle, Clock3 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
+import { Map } from "@/components/map";
+import { useRouter } from "next/navigation";
+
+
 
 
 export default function WorkerDashboard() {
     const {data: session} = useSession();
+    const router  = useRouter();
     console.log("session", session);
     // Mock data for UI demonstration
     // const isActive = true;
     const [isActive, setIsActive] = useState<boolean>(false);
+    const [isBookingAccepted, setIsBookingAccepted] = useState<boolean>(false);
+    const [latitude, setLatitude] = useState<number>(25.5941);
+    const [longitude, setLongitude] = useState<number>(85.1376);
+
+    useEffect(()=>{
+        if(session && session.user.role !== 'WORKER'){
+            // Redirect based on user role
+            if(session.user.role === 'CUSTOMER'){
+                router.push('/c/dashboard')
+                toast.error("You are not authorized to access this page", {position: 'top-center'})
+            } else {
+                router.push('/')
+            }
+        }
+    }, [session, router])
+
     const totalEarnings = 125000;
     const totalBookings = 47;
 
@@ -109,6 +130,8 @@ export default function WorkerDashboard() {
             navigator.geolocation.getCurrentPosition(async(position)=>{
                 try {
                     console.log("newStatus", newStatus);
+                    setLatitude(position.coords.latitude);
+                    setLongitude(position.coords.longitude);
                     const response = await updateWorkerStatus(newStatus, position.coords.latitude, position.coords.longitude)
                     
                     if(response && response.success){
@@ -169,6 +192,10 @@ export default function WorkerDashboard() {
                             />
                         </div>
                     </div>
+                </div>
+
+                <div className={`map ${isBookingAccepted ? 'block' : 'hidden'}`}>
+                    <Map lat={latitude} lng={longitude} />
                 </div>
 
                 {/* Stats Cards */}
