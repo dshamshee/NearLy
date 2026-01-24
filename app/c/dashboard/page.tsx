@@ -3,9 +3,22 @@ import { findNearbyWorkers } from "@/actions/findNearbyWorkers";
 import { Map } from "@/components/map";
 import { RecentProfessionals } from "@/components/recentProfessionals";
 import { Searching } from "@/components/searching";
+import { Worker } from "@/types/worker";
 import { zodSearchingType } from "@/zod/searching";
+import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { useState, useEffect } from "react";
+
+
+
+interface NearbyWorkerType extends Omit<Worker, 'userId'> {
+    userId: {
+        _id: string;
+        name: string;
+        email: string;
+        avatar: string;
+    }
+}
 
 
 
@@ -13,15 +26,18 @@ export default function CustomerDashboard() {
     const [mapLoaded, setMapLoaded] = useState<boolean>(false);
     const [bookingDetails, setBookingDetails] = useState<zodSearchingType | null>(null);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [nearbyWorkers, setNearbyWorkers] = useState<any[] | null>(null);
+    const [nearbyWorkers, setNearbyWorkers] = useState<NearbyWorkerType[] | null>(null);
     // const [nearbyWorkers, setNearbyWorkers] = useState
     // console.log("bookingDetails", bookingDetails);
+
+    const {data: session} = useSession();
+    console.log(session)
 
     useEffect(() => {
         const getNearbyWorkers = async () => {
             if (!bookingDetails || !mapLoaded) return;
             const workers = await findNearbyWorkers(bookingDetails.custLocation.latitude, bookingDetails.custLocation.longitude);
-            // console.log("workers", workers);
+            console.log("workers", workers);
             if (workers && workers.length > 0) setNearbyWorkers(workers);
             
         }

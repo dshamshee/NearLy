@@ -12,6 +12,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("I am here to singup")
     // Validate request body
     const body = await request.json();
     const { email, name } = body;

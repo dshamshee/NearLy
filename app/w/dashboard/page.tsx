@@ -20,7 +20,7 @@ export default function WorkerDashboard() {
     // const isActive = true;
     const [isActive, setIsActive] = useState<boolean>(false);
     
-    const [isBookingAccepted, setIsBookingAccepted] = useState<boolean>(false);
+    const [isBookingAccepted, setIsBookingAccepted] = useState<boolean>(true);
     const [latitude, setLatitude] = useState<number>(25.5941);
     const [longitude, setLongitude] = useState<number>(85.1376);
 

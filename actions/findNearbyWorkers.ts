@@ -23,7 +23,7 @@ export async function findNearbyWorkers(latitude: number, longitude: number){
             },
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any)
-        .populate('userId' as keyof Worker,  '_id name email phone avatar')
+        .populate('userId',  '_id name email phone avatar')
         .lean();
 
         if(!workers || workers.length === 0) return null;

@@ -10,6 +10,8 @@ const publicPaths = [
     "/login",
     "/",
     '/signup',
+    '/api/email-verification',
+    '/api/signup',
     // "/user/*/profile", // Example: another dynamic path
   ];
   
