@@ -25,7 +25,6 @@ interface NearbyWorkerType extends Omit<Worker, 'userId'> {
 export default function CustomerDashboard() {
     const [mapLoaded, setMapLoaded] = useState<boolean>(false);
     const [bookingDetails, setBookingDetails] = useState<zodSearchingType | null>(null);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [nearbyWorkers, setNearbyWorkers] = useState<NearbyWorkerType[] | null>(null);
     // const [nearbyWorkers, setNearbyWorkers] = useState
     // console.log("bookingDetails", bookingDetails);
@@ -36,16 +35,31 @@ export default function CustomerDashboard() {
     useEffect(() => {
         const getNearbyWorkers = async () => {
             if (!bookingDetails || !mapLoaded) return;
-            const workers = await findNearbyWorkers(bookingDetails.custLocation.latitude, bookingDetails.custLocation.longitude);
-            console.log("workers", workers);
-            if (workers && workers.length > 0) setNearbyWorkers(workers);
             
+            // Validate location before making API call
+            if (!bookingDetails.custLocation.latitude || !bookingDetails.custLocation.longitude) {
+                console.error("Invalid location data:", bookingDetails.custLocation);
+                return;
+            }
+            
+            try {
+                const workers = await findNearbyWorkers(bookingDetails.custLocation.latitude, bookingDetails.custLocation.longitude);
+                console.log("workers", workers);
+                if (workers && workers.length > 0) {
+                    setNearbyWorkers(workers);
+                } else {
+                    console.log("No nearby workers found");
+                    setNearbyWorkers([]);
+                }
+            } catch (error) {
+                console.error("Error fetching nearby workers:", error);
+            }
         }
         
         getNearbyWorkers();
     }, [bookingDetails, mapLoaded]);
     
-    console.log("nearbyWorkers", nearbyWorkers);
+    // console.log("nearbyWorkers", nearbyWorkers);
 
     return (
         <div className="mainContainer min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
@@ -56,7 +70,10 @@ export default function CustomerDashboard() {
                     <p className="text-lg text-gray-500">Get instant access to skilled professionals in your neighborhood.</p>
 
                     <div className="search mt-4 ">
-                        <Searching setBookingDetails={setBookingDetails} bookingDetails={bookingDetails} setMapLoaded={setMapLoaded} />
+                        <Searching 
+                            setBookingDetails={(data) => setBookingDetails(data)} 
+                            setMapLoaded={setMapLoaded} 
+                        />
                     </div>
 
 

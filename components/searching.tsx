@@ -19,21 +19,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "./ui/textarea";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { toast } from "sonner";
 
 export const Searching = ({
   setBookingDetails,
-  bookingDetails,
   setMapLoaded,
 }: {
   setBookingDetails: (data: zodSearchingType) => void;
-  bookingDetails: zodSearchingType | null;
   setMapLoaded: (loaded: boolean) => void;
 }) => {
   const [currentLocation, setCurrentLocation] = useState<{
     latitude: number | undefined;
     longitude: number | undefined;
-  }>({ latitude: undefined, longitude: undefined });
+  }>({ latitude: 22.3040, longitude: 73.2027 }); // set undefined in production
+  const [locationLoading, setLocationLoading] = useState<boolean>(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [currentAddress, setCurrentAddress] = useState<string | null>(null);
+  const [addressLoading, setAddressLoading] = useState<boolean>(false);
 
   const form = useForm<zodSearchingType>({
     resolver: zodResolver(zodSearching),
@@ -47,32 +50,122 @@ export const Searching = ({
     },
   });
 
+  // Function to reverse geocode coordinates to address
+  const reverseGeocode = useCallback(async (latitude: number, longitude: number) => {
+    try {
+      setAddressLoading(true);
+      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+      if (!apiKey) {
+        console.warn("Google Maps API key not found");
+        return;
+      }
+
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
+      );
+      
+      const data = await response.json();
+      
+      if (data.status === 'OK' && data.results && data.results.length > 0) {
+        // Get the formatted address (first result is usually the most specific)
+        const address = data.results[0].formatted_address;
+        setCurrentAddress(address);
+      } else {
+        console.warn("Geocoding failed:", data.status);
+        setCurrentAddress(null);
+      }
+    } catch (error) {
+      console.error("Error reverse geocoding:", error);
+      setCurrentAddress(null);
+    } finally {
+      setAddressLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (navigator.geolocation) {
+      setLocationLoading(true);
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
           const newLocation = {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
           };
           setCurrentLocation(newLocation);
+          setLocationError(null);
+          setLocationLoading(false);
           // Update form with location when obtained
           form.setValue("custLocation", {
             latitude: newLocation.latitude,
             longitude: newLocation.longitude,
           });
+          // Reverse geocode to get address
+          await reverseGeocode(newLocation.latitude, newLocation.longitude);
         },
         (error) => {
           console.log("Error on getting customer location", error);
+          setLocationLoading(false);
+          let errorMessage = "Unable to get your location. ";
+          
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage += "Please allow location access in your browser settings. If accessing via IP address, try using HTTPS or localhost.";
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage += "Location information is unavailable.";
+              break;
+            case error.TIMEOUT:
+              errorMessage += "Location request timed out. Please try again.";
+              break;
+            default:
+              errorMessage += "An unknown error occurred. Please try again.";
+              break;
+          }
+          
+          setLocationError(errorMessage);
+          toast.error(errorMessage, { duration: 5000, position: 'top-center' });
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
         }
       );
+    } else {
+      // setCurrentLocation({latitude: 22.3040, longitude: 73.2027})
+      const defaultLocation = {latitude: 22.3040, longitude: 73.2027};
+      form.setValue("custLocation", defaultLocation); // Remove in production
+      setLocationLoading(false);
+      const errorMsg = "Geolocation is not supported by your browser. Please use a modern browser or enable location services.";
+      setLocationError(errorMsg);
+      toast.error(errorMsg, { duration: 5000, position: 'top-center' });
+      // Reverse geocode default location
+      reverseGeocode(defaultLocation.latitude, defaultLocation.longitude);
     }
-  }, [form]);
+  }, [form, reverseGeocode]);
+
+  // Also reverse geocode if default location is set on mount
+  useEffect(() => {
+    if (currentLocation.latitude && currentLocation.longitude && !locationLoading && !currentAddress && !addressLoading) {
+      reverseGeocode(currentLocation.latitude, currentLocation.longitude);
+    }
+  }, [currentLocation.latitude, currentLocation.longitude, locationLoading, currentAddress, addressLoading, reverseGeocode]);
 
   const onSubmit = (data: zodSearchingType) => {
-    // console.log(data);
+    // Check if location is available before submitting
+    if (!data.custLocation.latitude || !data.custLocation.longitude) {
+      toast.error("Please allow location access to find nearby professionals", {
+        duration: 4000,
+        position: 'top-center'
+      });
+      return;
+    }
+    
+    console.log("find professionals clicked");
+    console.log("Submitting with location:", data.custLocation);
     setBookingDetails(data);
     setMapLoaded(true);
+    toast.success("Finding Professionals...", {duration: 3000, position: 'top-center'})
   };
 
   return (
@@ -84,17 +177,38 @@ export const Searching = ({
         }}
         className="flex flex-col gap-4 w-[400px] h-auto"
       >
-        {/* <Field>
-          <FieldLabel>Your Location</FieldLabel>
-          <Input className="bg-foreground/10" type="text" placeholder="Choose your location" />
-          <FieldError
-            errors={
-              form.formState.errors.custLocation?.message
-                ? [{ message: form.formState.errors.custLocation?.message }]
-                : undefined
-            }
-          ></FieldError>
-        </Field> */}
+        {/* Location Status */}
+        {locationLoading && (
+          <div className="text-sm text-muted-foreground flex items-center gap-2">
+            <span className="animate-spin">⏳</span>
+            Getting your location...
+          </div>
+        )}
+        {locationError && (
+          <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">
+            {locationError}
+          </div>
+        )}
+        {!locationLoading && !locationError && currentLocation.latitude && currentLocation.longitude && (
+          <div className="text-sm text-green-600 bg-green-50 dark:bg-green-950 p-3 rounded-md">
+            {addressLoading ? (
+              <div className="flex items-center gap-2">
+                <span className="animate-spin">⏳</span>
+                Getting address...
+              </div>
+            ) : currentAddress ? (
+              <div className="flex items-start gap-2">
+                <span>✓</span>
+                <span>Location: {currentAddress}</span>
+              </div>
+            ) : (
+              <div className="flex items-start gap-2">
+                <span>✓</span>
+                <span>Location found: {currentLocation.latitude.toFixed(4)}, {currentLocation.longitude.toFixed(4)}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         <Field>
           <FieldLabel>Profession Needed</FieldLabel>
@@ -178,8 +292,13 @@ export const Searching = ({
             }
           ></FieldError>
         </Field>
-        <Button type="submit" variant="default" className="cursor-pointer">
-          Find Professionals
+        <Button 
+          type="submit" 
+          variant="default" 
+          className="cursor-pointer hover:bg-orange-600"
+          // disabled={locationLoading || !currentLocation.latitude || !currentLocation.longitude}
+        >
+          {locationLoading ? "Getting Location..." : "Find Professionals"}
         </Button>
       </form>
     </div>

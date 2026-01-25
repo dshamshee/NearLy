@@ -63,8 +63,9 @@ export default function SignupPage() {
       setIsSubmitting(true);
       const response = await axios.post('/api/signup', data);
       if(response.data.success){
-        toast.success(response.data.message);
-        router.push('/');
+        // toast.success(response.data.message);
+        toast.success("Account created successfully. Please login to continue");
+        router.push('/login');
       }
  
     } catch (error) {
