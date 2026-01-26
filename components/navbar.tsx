@@ -58,7 +58,7 @@ export function NavigationBar() {
       <NavBody>
         {/* <NavbarLogo /> */}
         <h1 className="text-2xl font-bold flex items-center gap-1">
-          <svg
+          {/* <svg
             className="w-10 h-10 LogoIcon"
             viewBox="0 0 100 100"
             fill="none"
@@ -100,7 +100,8 @@ export function NavigationBar() {
                 <stop offset="1" stopColor="#FF6900" />
               </linearGradient>
             </defs>
-          </svg>
+          </svg> */}
+          <Image src="/logo.png" alt="logo" width={40} height={40} />
           <div className="text-xl">
             <span className="text-foreground">Near</span>
             <span className="text-orange-500">Ly</span>
@@ -137,7 +138,7 @@ export function NavigationBar() {
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
-                    className="rounded-full w-full"
+                    className="rounded-full"
                     size="icon"
                   >
                     {session?.user?.avatar ? (
@@ -149,7 +150,7 @@ export function NavigationBar() {
                         className="rounded-full object-cover"
                       />
                     ) : (
-                      <UserIcon className="h-[1.8rem] w-[1.8rem]" />
+                      <UserIcon />
                     )}
                     <span className="sr-only">Profile</span>
                   </Button>

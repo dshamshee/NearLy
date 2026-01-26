@@ -104,7 +104,10 @@ export default function LoginPage() {
 
       if(result?.ok){
         toast.success("Login Successful");
-        router.push("/");
+        if(data.identifier === "CUSTOMER") router.push("/c/dashboard")
+          else if(data.identifier === "WORKER") router.push("/w/dashboard");
+        else router.push("/");
+        // router.push("/");
       } else toast.error(result?.error || "Login Failed");
       
     } catch (error) {
@@ -117,7 +120,7 @@ export default function LoginPage() {
   const loginWithGoogle = async () => {
     // console.log("role", role);
     try {
-      await signInWithRole("google", role, "/");
+      await signInWithRole("google", role, role === "CUSTOMER" ? "/c/dashboard" : "/w/dashboard");
       // Errors will be handled via URL parameters in useEffect
     } catch (error) {
       toast.error( error instanceof Error ? error.message : "An error occurred during login");
