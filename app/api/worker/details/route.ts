@@ -33,13 +33,14 @@ export async function GET(request: NextRequest) {
             success: true,
             message: "Worker details fetched successfully",
             statusCode: 200,
-            data: {
-                _id: worker._id,
-                isActive: worker.isActive || false,
-                totalEarnings: worker.totalEarnings || 0,
-                totalBookings: worker.totalBookings || 0,
-                profession: worker.profession,
-            },
+            data: worker
+            // data: {
+            //     _id: worker._id,
+            //     isActive: worker.isActive || false,
+            //     totalEarnings: worker.totalEarnings || 0,
+            //     totalBookings: worker.totalBookings || 0,
+            //     profession: worker.profession,
+            // },
         }, { status: 200 });
 
     } catch (error: unknown) {

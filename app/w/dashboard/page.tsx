@@ -8,33 +8,31 @@ import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { Map } from "@/components/map";
 import { useRouter } from "next/navigation";
+import axios from "axios";
 
 
 
 
 export default function WorkerDashboard() {
     const {data: session} = useSession();
-    const router  = useRouter();
-    console.log("session", session);
+    // const router  = useRouter();
     // Mock data for UI demonstration
     // const isActive = true;
     const [isActive, setIsActive] = useState<boolean>(false);
-    
-    const [isBookingAccepted, setIsBookingAccepted] = useState<boolean>(true);
+    const [isBookingAccepted, setIsBookingAccepted] = useState<boolean>(false);
     const [latitude, setLatitude] = useState<number>(25.5941);
     const [longitude, setLongitude] = useState<number>(85.1376);
 
+
     useEffect(()=>{
-        if(session && session.user.role !== 'WORKER'){
-            // Redirect based on user role
-            if(session.user.role === 'CUSTOMER'){
-                router.push('/c/dashboard')
-                toast.error("You are not authorized to access this page", {position: 'top-center'})
-            } else {
-                router.push('/')
-            }
+        const getWorkerDetails = async ()=>{
+            const response = await axios.get("/api/worker/details");
+            console.log('workerDetails', response.data.data)
         }
-    }, [session, router])
+        getWorkerDetails();
+    }, [session])
+
+
 
     const totalEarnings = 125000;
     const totalBookings = 47;
