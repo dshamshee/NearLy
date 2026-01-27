@@ -7,14 +7,22 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { Map } from "@/components/map";
-import { useRouter } from "next/navigation";
-import axios from "axios";
+import {
+    Alert,
+    AlertAction,
+    AlertDescription,
+    AlertTitle,
+} from "@/components/ui/alert"
+import { Button } from "@/components/ui/button";
+import { AlertTriangleIcon } from "lucide-react"
+import { getWorkerProfileStatus } from "@/actions/workerProfileStatus";
+import Link from "next/link";
 
 
 
 
 export default function WorkerDashboard() {
-    const {data: session} = useSession();
+    const { data: session } = useSession();
     // const router  = useRouter();
     // Mock data for UI demonstration
     // const isActive = true;
@@ -22,12 +30,13 @@ export default function WorkerDashboard() {
     const [isBookingAccepted, setIsBookingAccepted] = useState<boolean>(false);
     const [latitude, setLatitude] = useState<number>(25.5941);
     const [longitude, setLongitude] = useState<number>(85.1376);
+    const [isProfileCompleted, setIsProfileCompleted] = useState<boolean>(false);
 
 
-    useEffect(()=>{
-        const getWorkerDetails = async ()=>{
-            const response = await axios.get("/api/worker/details");
-            console.log('workerDetails', response.data.data)
+    useEffect(() => {
+        const getWorkerDetails = async () => {
+            const response = await getWorkerProfileStatus();
+            setIsProfileCompleted(response.data!)
         }
         getWorkerDetails();
     }, [session])
@@ -120,24 +129,24 @@ export default function WorkerDashboard() {
             </span>
         );
     };
-    
-    const handleAvailabilityToggle = async ()=>{
+
+    const handleAvailabilityToggle = async () => {
         const newStatus = !isActive;
         setIsActive(newStatus);
-        
-        if(navigator.geolocation){
-            navigator.geolocation.getCurrentPosition(async(position)=>{
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(async (position) => {
                 try {
                     console.log("newStatus", newStatus);
                     setLatitude(position.coords.latitude);
                     setLongitude(position.coords.longitude);
                     const response = await updateWorkerStatus(newStatus, position.coords.latitude, position.coords.longitude)
-                    
-                    if(response && response.success){
-                        if(newStatus) {
-                            toast.success("You're now available for bookings", {position: 'top-right'})
+
+                    if (response && response.success) {
+                        if (newStatus) {
+                            toast.success("You're now available for bookings", { position: 'top-right' })
                         } else {
-                            toast.success("You're now unavailable for bookings", {position: 'top-right'})
+                            toast.success("You're now unavailable for bookings", { position: 'top-right' })
                         }
                     } else {
                         setIsActive(!newStatus);
@@ -148,8 +157,8 @@ export default function WorkerDashboard() {
                     setIsActive(!newStatus);
                     toast.error("Something went wrong");
                 }
-            }, (error)=>{
-                console.log("Geolocation error:", error);    
+            }, (error) => {
+                console.log("Geolocation error:", error);
                 setIsActive(!newStatus);
                 toast.error("Unable to get your location. Please enable location access.");
             })
@@ -172,6 +181,22 @@ export default function WorkerDashboard() {
                     </div>
                 </div>
 
+                {/* Profile Completion Alert */}
+                <Alert className="max-w-5xl ml-[10%]" variant={"destructive"}>
+                    <AlertTriangleIcon />
+                    <AlertTitle>Your profile isn&apos;t completed</AlertTitle>
+                    <AlertDescription>
+                        Please complete your profile to start your journey and earn money.
+                    </AlertDescription>
+                    <AlertAction>
+                        <Button variant="outline">
+                            <Link href={"/w/profile/edit"}>
+                                Complete Profile
+                            </Link>
+                        </Button>
+                    </AlertAction>
+                </Alert>
+
                 {/* Availability Toggle Card */}
                 <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
                     <div className="flex items-center justify-between">
@@ -188,6 +213,7 @@ export default function WorkerDashboard() {
                             <Switch
                                 checked={isActive}
                                 onCheckedChange={handleAvailabilityToggle}
+                                disabled={!isProfileCompleted}
                             />
                         </div>
                     </div>
