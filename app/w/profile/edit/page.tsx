@@ -6,6 +6,7 @@ import WorkerProfileEdit, { WorkerDetailsType } from "@/components/workerProfile
 export default async function WorkerEditProfilePage(){
 
     const details = await getWorkerDetails();
+    // console.log(details.data)
     if(!details.success || !details.data){
         return <div>Error: {details.message}</div>
     }

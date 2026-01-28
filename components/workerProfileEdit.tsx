@@ -10,20 +10,26 @@ import { Worker, WorkerProfessions } from "@/types/worker";
 import { User as UserIcon, Phone, Mail, CreditCard, Briefcase, Award, DollarSign, Edit3, ShieldCheck, Sparkles, ArrowLeft } from "lucide-react";
 import { editWorkerDetails, EditWorkerDetailsType } from "@/zod/editWorkerDetails";
 import Link from "next/link";
+import axios, { AxiosError } from "axios";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+
 
 
 export interface WorkerDetailsType extends Omit<Worker, "userId"> {
     userId: {
         name: string;
         email: string;
-        avatar: string; 
-        role: "CUSTOMER" | "WORKER" | "ADMIN";
+        avatar?: string; 
+        role?: "CUSTOMER" | "WORKER" | "ADMIN";
         phone?: string;
     }
 }
 
 
 export default function WorkerProfileEdit({details}: {details: WorkerDetailsType}) {
+
+    const router = useRouter();
 
     const form = useForm<EditWorkerDetailsType>({
         resolver: zodResolver(editWorkerDetails),
@@ -46,9 +52,25 @@ export default function WorkerProfileEdit({details}: {details: WorkerDetailsType
         name: "profession",
     });
 
-    const onSubmit = (data: EditWorkerDetailsType) => {
-        console.log("Form Data:", data);
-        // API call will be added later
+    const onSubmit = async (data: EditWorkerDetailsType) => {
+        try {
+            console.log("Form Data:", data);
+            const response = await axios.post("/api/worker/update-profile", data);
+            console.log('response', response.data)
+            if(!response.data.success) {
+                toast.error(response.data.message);
+            } else {
+                toast.success(response.data.message);
+                router.push("/w/dashboard");
+            }
+        } catch (error: unknown) {
+            console.error("Error updating profile:", error);
+            if (error instanceof AxiosError && error.response?.data?.message) {
+                toast.error(error.response.data.message as string);
+            } else {
+                toast.error("Failed to update profile. Please try again.");
+            }
+        }
     };
 
     return (

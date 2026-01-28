@@ -182,7 +182,9 @@ export default function WorkerDashboard() {
                 </div>
 
                 {/* Profile Completion Alert */}
-                <Alert className="max-w-5xl ml-[10%]" variant={"destructive"}>
+                {
+                    !isProfileCompleted ? (
+                        <Alert className="max-w-5xl ml-[10%]" variant={"destructive"}>
                     <AlertTriangleIcon />
                     <AlertTitle>Your profile isn&apos;t completed</AlertTitle>
                     <AlertDescription>
@@ -196,6 +198,8 @@ export default function WorkerDashboard() {
                         </Button>
                     </AlertAction>
                 </Alert>
+                    ): ("")
+                }
 
                 {/* Availability Toggle Card */}
                 <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
