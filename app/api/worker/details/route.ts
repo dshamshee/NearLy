@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
         }
 
         const userId = session.user._id;
-        const worker = await WorkerModel.findOne({ userId }).lean();
+        const worker = await WorkerModel.findOne({ userId }).populate("userId", "name email avatar phone role").lean();
 
         if (!worker) {
             return NextResponse.json<Response>({
