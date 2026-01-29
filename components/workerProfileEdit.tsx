@@ -118,7 +118,6 @@ export default function WorkerProfileEdit({details}: {details: WorkerDetailsType
                                             id="name"
                                             type="text"
                                             {...form.register("name")}
-                                            // value={workerDetails?.userId?.name|| ""}
                                             placeholder="Enter your full name"
                                             className="h-11"
                                         />
@@ -142,8 +141,7 @@ export default function WorkerProfileEdit({details}: {details: WorkerDetailsType
                                             id="phone"
                                             type="tel"
                                             {...form.register("phone")}
-                                            // value={workerDetails?.userId?.phone || ""}
-                                            placeholder="+91 9876543210"
+                                            placeholder="9876543210"
                                             className="h-11"
                                         />
                                         <FieldError

@@ -8,15 +8,15 @@ export interface Bookings {
     bookingDate: Date;
     bookingTime: Date;
     bookingStatus: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
-    cancelledBy: "CUSTOMER" | "WORKER";
-    cancellationFee: number;
-    workNeededDescription: string;
-    workNeededProfession: WorkerProfessions;
-    customerLongitude: Decimal128;
-    customerLatitude: Decimal128;
-    workerLongitude: Decimal128;
-    workerLatitude: Decimal128;
-    workerOutForWork: boolean;
-    workerArrivedAtDestination: boolean;
-    isWorkCompleted: boolean;
+    cancelledBy?: "CUSTOMER" | "WORKER";
+    cancellationFee?: number;
+    workNeededDescription?: string;
+    workNeededProfession?: WorkerProfessions;
+    customerLongitude?: Decimal128;
+    customerLatitude?: Decimal128;
+    workerLongitude?: Decimal128;
+    workerLatitude?: Decimal128;
+    workerOutForWork?: boolean;
+    workerArrivedAtDestination?: boolean;
+    isWorkCompleted?: boolean;
 }

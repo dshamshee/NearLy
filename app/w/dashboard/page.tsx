@@ -17,21 +17,23 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangleIcon } from "lucide-react"
 import { getWorkerProfileStatus } from "@/actions/workerProfileStatus";
 import Link from "next/link";
+import { Bookings } from "@/types/booking";
+import { io, Socket } from "socket.io-client";
 
 
 
 
 export default function WorkerDashboard() {
     const { data: session } = useSession();
-    // const router  = useRouter();
-    // Mock data for UI demonstration
-    // const isActive = true;
+
     const [isActive, setIsActive] = useState<boolean>(false);
+    const [incomingBooking, setIncomingBooking] = useState<Bookings | null>(null)
+    const [trackingInterval, setTrackingInterval] = useState<NodeJS.Timeout | null>(null)
     const [isBookingAccepted, setIsBookingAccepted] = useState<boolean>(false);
     const [latitude, setLatitude] = useState<number>(25.5941);
     const [longitude, setLongitude] = useState<number>(85.1376);
     const [isProfileCompleted, setIsProfileCompleted] = useState<boolean>(false);
-
+    const [socket, setSocket] = useState<Socket | null>(null);
 
     useEffect(() => {
         const getWorkerDetails = async () => {
@@ -39,7 +41,42 @@ export default function WorkerDashboard() {
             setIsProfileCompleted(response.data!)
         }
         getWorkerDetails();
+        
     }, [session])
+
+    useEffect(() => {
+        // Initialize socket connection
+        const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000';
+        const newSocket = io(socketUrl, {
+            transports: ['websocket', 'polling'],
+            reconnection: true,
+            reconnectionDelay: 1000,
+            reconnectionAttempts: 5
+        });
+
+        newSocket.on('connect', () => {
+            console.log('Socket connected:', newSocket.id);
+        });
+
+        newSocket.on('disconnect', () => {
+            console.log('Socket disconnected');
+        });
+
+        newSocket.on('connect_error', (error) => {
+            console.error('Socket connection error:', error);
+            toast.error('Failed to connect to tracking server');
+        });
+
+        // Set socket after initialization
+        setTimeout(() => {
+            setSocket(newSocket);
+        }, 1000);
+
+        // Cleanup on unmount
+        return () => {
+            newSocket.disconnect();
+        };
+    }, [])
 
 
 
@@ -145,8 +182,21 @@ export default function WorkerDashboard() {
                     if (response && response.success) {
                         if (newStatus) {
                             toast.success("You're now available for bookings", { position: 'top-right' })
+                            // Register with tracking server after successful status update
+                            if (socket && socket.connected) {
+                                socket.emit("register-active-worker", session?.user?._id);
+                            } else if (socket && !socket.connected) {
+                                // Wait for socket to connect before emitting
+                                socket.once('connect', () => {
+                                    socket.emit("register-active-worker", session?.user?._id);
+                                });
+                            }
                         } else {
                             toast.success("You're now unavailable for bookings", { position: 'top-right' })
+                            // Unregister from tracking server when becoming inactive
+                            if (socket && socket.connected && session?.user?._id) {
+                                socket.emit("unregister-active-worker", session?.user?._id);
+                            }
                         }
                     } else {
                         setIsActive(!newStatus);
@@ -185,19 +235,19 @@ export default function WorkerDashboard() {
                 {
                     !isProfileCompleted && (
                         <Alert className="max-w-5xl md:ml-[10%]" variant={"destructive"}>
-                    <AlertTriangleIcon />
-                    <AlertTitle>Your profile isn&apos;t completed</AlertTitle>
-                    <AlertDescription className="hidden md:block">
-                        Please complete your profile to start your journey and earn money.
-                    </AlertDescription>
-                    <AlertAction>
-                        <Button variant="outline">
-                            <Link href={"/w/profile/edit"}>
-                                Complete Profile
-                            </Link>
-                        </Button>
-                    </AlertAction>
-                </Alert>
+                            <AlertTriangleIcon />
+                            <AlertTitle>Your profile isn&apos;t completed</AlertTitle>
+                            <AlertDescription className="hidden md:block">
+                                Please complete your profile to start your journey and earn money.
+                            </AlertDescription>
+                            <AlertAction>
+                                <Button variant="outline">
+                                    <Link href={"/w/profile/edit"}>
+                                        Complete Profile
+                                    </Link>
+                                </Button>
+                            </AlertAction>
+                        </Alert>
                     )
                 }
 
