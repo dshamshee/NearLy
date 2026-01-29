@@ -19,6 +19,7 @@ import { getWorkerProfileStatus } from "@/actions/workerProfileStatus";
 import Link from "next/link";
 import { Bookings } from "@/types/booking";
 import { io, Socket } from "socket.io-client";
+import { zodSearchingType } from "@/zod/searching";
 
 
 
@@ -27,7 +28,7 @@ export default function WorkerDashboard() {
     const { data: session } = useSession();
 
     const [isActive, setIsActive] = useState<boolean>(false);
-    const [incomingBooking, setIncomingBooking] = useState<Bookings | null>(null)
+    const [incomingBooking, setIncomingBooking] = useState<zodSearchingType | null>(null)
     const [trackingInterval, setTrackingInterval] = useState<NodeJS.Timeout | null>(null)
     const [isBookingAccepted, setIsBookingAccepted] = useState<boolean>(false);
     const [latitude, setLatitude] = useState<number>(25.5941);
@@ -77,6 +78,26 @@ export default function WorkerDashboard() {
             newSocket.disconnect();
         };
     }, [])
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleIncomingRequest = (data: { bookingId: string; jobDetails: zodSearchingType }) => {
+            console.log("Incoming booking request:", data);
+            setIncomingBooking(data.jobDetails);
+            toast.info("New booking request received!", {
+                position: 'top-right',
+                description: `You have a new booking request. Check details below.`
+            });
+        };
+
+        socket.on("incoming-request", handleIncomingRequest);
+
+        // Cleanup listener on unmount or socket change
+        return () => {
+            socket.off("incoming-request", handleIncomingRequest);
+        };
+    }, [socket])
 
 
 

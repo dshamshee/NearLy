@@ -1,28 +1,37 @@
 'use server'
 
 import WorkerModel from "@/models/worker";
+import { WorkerProfessions } from "@/types/worker";
 import dbConnect from "@/utils/dbConnection"
 import { Decimal128 } from "mongodb";
 import mongoose from "mongoose";
 
-export async function findNearbyWorkers(latitude: number, longitude: number){
+export async function findNearbyWorkers(latitude: number, longitude: number, profession: WorkerProfessions){
 
     try {
         await dbConnect();
         
-        // Find workers within 5KM radius of the given latitude and longitude
-        // Populate user details from User table
+        // Calculate approximate bounding box for ~5KM radius
+        // Approximately 0.045 degrees ≈ 5km at the equator
+        const latRange = 0.045;
+        const lngRange = 0.045;
+        
+        // Find workers within ~5KM radius of the given latitude and longitude
+        // Only include active workers with completed profiles
+        // Use $expr to convert Decimal128 to double for comparison
         const workers = await WorkerModel.find({
-            latitude: {
-                $gte: latitude - 0.05,
-                $lte: latitude + 0.05,
+            $expr: {
+                $and: [
+                    { $gte: [{ $toDouble: "$latitude" }, latitude - latRange] },
+                    { $lte: [{ $toDouble: "$latitude" }, latitude + latRange] },
+                    { $gte: [{ $toDouble: "$longitude" }, longitude - lngRange] },
+                    { $lte: [{ $toDouble: "$longitude" }, longitude + lngRange] },
+                ]
             },
-            longitude: {
-                $gte: longitude - 0.05,
-                $lte: longitude + 0.05,
-            },
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any)
+            profession: profession,
+            isActive: true,
+            isProfileCompleted: true,
+        })
         .populate('userId',  '_id name email phone avatar')
         .lean();
 
