@@ -3,7 +3,7 @@
 import { updateWorkerStatus } from "@/actions/updateWorkerStatus";
 import { Switch } from "@/components/ui/switch";
 import { Calendar, Clock, DollarSign, Briefcase, User, CheckCircle2, XCircle, Clock3 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { Map } from "@/components/map";
@@ -20,6 +20,7 @@ import Link from "next/link";
 import { Bookings } from "@/types/booking";
 import { io, Socket } from "socket.io-client";
 import { zodSearchingType } from "@/zod/searching";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 
 
@@ -35,6 +36,11 @@ export default function WorkerDashboard() {
     const [longitude, setLongitude] = useState<number>(85.1376);
     const [isProfileCompleted, setIsProfileCompleted] = useState<boolean>(false);
     const [socket, setSocket] = useState<Socket | null>(null);
+
+    const [locationLoading, setLocationLoading] = useState<boolean>(false);
+    const [locationError, setLocationError] = useState<string | null>(null);
+    const [currentAddress, setCurrentAddress] = useState<string | null>(null);
+    const [addressLoading, setAddressLoading] = useState<boolean>(false);
 
     useEffect(() => {
         const getWorkerDetails = async () => {
@@ -82,9 +88,11 @@ export default function WorkerDashboard() {
     useEffect(() => {
         if (!socket) return;
 
-        const handleIncomingRequest = (data: { bookingId: string; jobDetails: zodSearchingType }) => {
+        const handleIncomingRequest = async (data: { bookingId: string; jobDetails: zodSearchingType }) => {
             console.log("Incoming booking request:", data);
             setIncomingBooking(data.jobDetails);
+            // const currentLocation = await reverseGeocode(data.jobDetails.custLocation.latitude, data.jobDetails.custLocation.longitude);
+            // setCurrentAddress(currentLocation ?? null);
             toast.info("New booking request received!", {
                 position: 'top-right',
                 description: `You have a new booking request. Check details below.`
@@ -98,6 +106,58 @@ export default function WorkerDashboard() {
             socket.off("incoming-request", handleIncomingRequest);
         };
     }, [socket])
+
+
+
+    
+  // Function to reverse geocode coordinates to address
+  const reverseGeocode = useCallback(async (latitude: number, longitude: number) => {
+    try {
+      setAddressLoading(true);
+      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+      if (!apiKey) {
+        console.warn("Google Maps API key not found");
+        return;
+      }
+
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
+      );
+      
+      const data = await response.json();
+      
+      if (data.status === 'OK' && data.results && data.results.length > 0) {
+        // Get the formatted address (first result is usually the most specific)
+        const address = data.results[0].formatted_address;
+        setCurrentAddress(address);
+      } else {
+        console.warn("Geocoding failed:", data.status);
+        setCurrentAddress(null);
+      }
+    } catch (error) {
+      console.error("Error reverse geocoding:", error);
+      setCurrentAddress(null);
+    } finally {
+      setAddressLoading(false);
+    }
+  }, []);
+
+  useEffect(()=>{
+    if(incomingBooking){
+        reverseGeocode(incomingBooking.custLocation.latitude, incomingBooking.custLocation.longitude);
+        setCurrentAddress(currentAddress ?? null);
+    }
+  },[incomingBooking, currentAddress])
+
+  const getDistanceInMeters = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371e3; // Earth radius in meters
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const d = R * c;
+    return d;
+  }
 
 
 
@@ -293,6 +353,28 @@ export default function WorkerDashboard() {
                         </div>
                     </div>
                 </div>
+
+                {
+                    incomingBooking && (
+                        <Card className=" mx-auto">
+                            {/* <CardHeader> */}
+                            {/* </CardHeader> */}
+                            <CardContent className="flex flex-col gap-2">
+                                <CardTitle>
+                                <p className="text-lg font-semibold">Someone find {incomingBooking.workNeededProfession.toLowerCase()} in your area.</p>
+                                </CardTitle>
+                                <CardDescription>
+                                    <p className="text-sm text-muted-foreground">Details: {incomingBooking.workNeededDescription}</p>
+                                </CardDescription>
+                                <p className="text-sm text-muted-foreground">Cutomer Location: {currentAddress ?? "Loading..."}</p>
+                                <p className="text-sm text-muted-foreground">Distance from you: {getDistanceInMeters(incomingBooking.custLocation.latitude, incomingBooking.custLocation.longitude, latitude, longitude)} Km</p>
+                                <Button className="cursor-pointer" variant="outline">Accept Booking</Button>
+                            </CardContent>
+                            {/* <CardFooter> */}
+                            {/* </CardFooter> */}
+                        </Card>
+                    )
+                }
 
                 <div className={`map ${isBookingAccepted ? 'block' : 'hidden'}`}>
                     <Map lat={latitude} lng={longitude} />

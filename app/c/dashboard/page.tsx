@@ -11,6 +11,7 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import { io, Socket } from "socket.io-client";
 import { toast } from "sonner";
+import { Spinner } from "@/components/ui/spinner"
 
 
 export interface NearbyWorkerType extends Omit<Worker, 'userId'> {
@@ -30,7 +31,7 @@ export default function CustomerDashboard() {
     const [nearbyWorkers, setNearbyWorkers] = useState<NearbyWorkerType[] | null>(null);
     const [socket, setSocket] = useState<Socket | null>(null);
     const [trackingBookingId, setTrackingBookingId] = useState<string | null>(null);
-    // console.log(bookingDetails)
+    const [isBookingsent, setIsBookingsent] = useState<boolean>(false)
 
     const { data: session } = useSession();
     console.log(nearbyWorkers);
@@ -137,6 +138,7 @@ export default function CustomerDashboard() {
         });
         
         console.log("Booking request sent:", { bookingId, selectedWorkerId: workerId });
+        setIsBookingsent(true);
         toast.success("Booking request sent successfully");
     }
 
@@ -171,7 +173,7 @@ export default function CustomerDashboard() {
             </div>
 
 
-            {nearbyWorkers && nearbyWorkers.length > 0 && (
+            {nearbyWorkers && !isBookingsent && nearbyWorkers.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{
                     nearbyWorkers.map((worker) => {
                         const distance = calculateDistance(
@@ -196,7 +198,14 @@ export default function CustomerDashboard() {
                             />)
                     })}
                 </div>
-            )}
+            ): (
+                <div className="flex flex-col items-center justify-center gap-4">
+                <h1>Wait for the worker to accept the booking</h1>
+                <Spinner className="size-6" data-icon="inline-start" />
+                </div>
+                
+            )
+        }
 
             {!nearbyWorkers && (
                 <div className="recentProfessionals mt-10">
