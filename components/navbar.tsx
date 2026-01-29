@@ -185,10 +185,13 @@ export function NavigationBar() {
       {/* Mobile Navigation */}
       <MobileNav>
         <MobileNavHeader>
-          <h1 className="text-2xl font-bold">
-            <span className="text-foreground">Near</span>
-            <span className="text-orange-500">Ly</span>
-          </h1>
+          <div className="flex items-center gap-2">
+            <Image src="/logo.png" alt="logo" width={40} height={40} />
+            <h1 className="text-2xl font-bold">
+              <span className="text-foreground">Near</span>
+              <span className="text-orange-500">Ly</span>
+            </h1>
+          </div>
           <MobileNavToggle
             isOpen={isMobileMenuOpen}
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -200,31 +203,50 @@ export function NavigationBar() {
           onClose={() => setIsMobileMenuOpen(false)}
         >
           {navItems.map((item, idx) => (
-            <a
+            <Link
               key={`mobile-link-${idx}`}
               href={item.link}
               onClick={() => setIsMobileMenuOpen(false)}
               className="relative text-neutral-600 dark:text-neutral-300"
             >
               <span className="block">{item.name}</span>
-            </a>
+            </Link>
           ))}
-          <div className="flex w-full flex-col gap-4">
+          {/* <div className="flex w-full flex-col gap-4"> */}
+
+          {
+            session ? (
+              <div className="flex w-full flex-col gap-4">
+                <Link href={session ? `/${session?.user?.role === "CUSTOMER" ? "c" : "w"}/profile/${session?.user?._id}` : "/login"} onClick={() => setIsMobileMenuOpen(false)} className="relative text-neutral-600 dark:text-neutral-300">
+                  <span className="block">Profile</span>
+                </Link>
+                <Link href={'/login'} onClick={() => signOut({ callbackUrl: "/" })} className="relative text-neutral-600 dark:text-neutral-300">
+                  <span className="block">logout</span>
+                </Link>
+              </div>
+            ) : (
+              <div className="flex w-full flex-col gap-4">
+                <Link href={'/login'} onClick={() => setIsMobileMenuOpen(false)} className="relative text-neutral-600 dark:text-neutral-300">Login</Link>
+              </div>
+            )
+          }
+
+
+          {/* <NavbarButton
+              onClick={() => setIsMobileMenuOpen(false)}
+              variant="primary"
+              className="w-full"
+            >
+              Profile
+            </NavbarButton>
             <NavbarButton
               onClick={() => setIsMobileMenuOpen(false)}
               variant="primary"
               className="w-full"
             >
               Login
-            </NavbarButton>
-            <NavbarButton
-              onClick={() => setIsMobileMenuOpen(false)}
-              variant="primary"
-              className="w-full"
-            >
-              Book a call
-            </NavbarButton>
-          </div>
+            </NavbarButton> */}
+          {/* </div> */}
         </MobileNavMenu>
       </MobileNav>
     </Navbar>

@@ -183,11 +183,11 @@ export default function WorkerDashboard() {
 
                 {/* Profile Completion Alert */}
                 {
-                    !isProfileCompleted ? (
-                        <Alert className="max-w-5xl ml-[10%]" variant={"destructive"}>
+                    !isProfileCompleted && (
+                        <Alert className="max-w-5xl md:ml-[10%]" variant={"destructive"}>
                     <AlertTriangleIcon />
                     <AlertTitle>Your profile isn&apos;t completed</AlertTitle>
-                    <AlertDescription>
+                    <AlertDescription className="hidden md:block">
                         Please complete your profile to start your journey and earn money.
                     </AlertDescription>
                     <AlertAction>
@@ -198,7 +198,7 @@ export default function WorkerDashboard() {
                         </Button>
                     </AlertAction>
                 </Alert>
-                    ): ("")
+                    )
                 }
 
                 {/* Availability Toggle Card */}
