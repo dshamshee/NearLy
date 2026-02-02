@@ -3,6 +3,7 @@ import { z } from "zod";
 
 
 export const zodSearching = z.object({
+    bookingId: z.string().min(1, {message: "Booking ID is required"}),
     workNeededProfession: z.enum(WorkerProfessions, {message: "Profession is required"}),
     workNeededDescription: z.string().min(1, {message: "Please describe the work needed."}),
     custLocation: z.object({

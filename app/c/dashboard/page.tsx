@@ -9,9 +9,9 @@ import { zodSearchingType } from "@/zod/searching";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { io, Socket } from "socket.io-client";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner"
+import { useSocket } from "@/utils/socketContext";
 
 
 export interface NearbyWorkerType extends Omit<Worker, 'userId'> {
@@ -29,38 +29,42 @@ export default function CustomerDashboard() {
     const [mapLoaded, setMapLoaded] = useState<boolean>(false);
     const [bookingDetails, setBookingDetails] = useState<zodSearchingType | null>(null);
     const [nearbyWorkers, setNearbyWorkers] = useState<NearbyWorkerType[] | null>(null);
-    const [socket, setSocket] = useState<Socket | null>(null);
     const [trackingBookingId, setTrackingBookingId] = useState<string | null>(null);
-    const [isBookingsent, setIsBookingsent] = useState<boolean>(false)
+    const [isBookingsent, setIsBookingsent] = useState<boolean>(false);
+    const [isBookingAccepted, setIsBookingAccepted] = useState<boolean>(false);
 
     const { data: session } = useSession();
     console.log(nearbyWorkers);
+    const {socket, isConnected} = useSocket();
 
+    // Listen for booking confirmation from worker
     useEffect(() => {
-        // Initialize socket connection
-        const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000';
-        const newSocket = io(socketUrl, {
-            transports: ['websocket', 'polling'],
-            reconnection: true,
-            reconnectionDelay: 1000,
-            reconnectionAttempts: 5
-        });
+        if (!socket) return;
 
-        newSocket.on('connect', () => {
-            console.log('Socket connected:', newSocket.id);
-        });
-        newSocket.on('disconnect', () => {
-            console.log('Socket disconnected');
-        });
-        newSocket.on('connect_error', (error) => {
-            console.error('Socket connection error:', error);
-        });
+        const handleBookingConfirmed = (data: { msg: string }) => {
+            console.log("Booking confirmed:", data);
+            setIsBookingAccepted(true);
+            toast.success("Worker accepted your booking!", {
+                position: 'top-right',
+            });
+        };
 
-        setTimeout(() => {
-            setSocket(newSocket)
-        })
+        const handleBookingError = (error: { message: string }) => {
+            console.error("Booking error:", error);
+            toast.error(error.message || "Booking request failed", {
+                position: 'top-right',
+            });
+            setIsBookingsent(false);
+        };
 
-    }, [session])
+        socket.on("booking-confirmed", handleBookingConfirmed);
+        socket.on("booking-request-error", handleBookingError);
+
+        return () => {
+            socket.off("booking-confirmed", handleBookingConfirmed);
+            socket.off("booking-request-error", handleBookingError);
+        };
+    }, [socket]);
 
     const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
         const R = 6371e3; // Earth radius in meters
@@ -117,8 +121,9 @@ export default function CustomerDashboard() {
     }, [bookingDetails, mapLoaded]);
 
 
+    // Function to send a booking request to a worker
     const sendBookingRequest = (workerId: string)=>{
-        if (!socket || !socket.connected) {
+        if (!socket || !isConnected) {
             toast.error("Not connected to server. Please wait...");
             return;
         }
@@ -173,7 +178,7 @@ export default function CustomerDashboard() {
             </div>
 
 
-            {nearbyWorkers && !isBookingsent && nearbyWorkers.length > 0 ? (
+            {nearbyWorkers && nearbyWorkers.length > 0 && !isBookingsent ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{
                     nearbyWorkers.map((worker) => {
                         const distance = calculateDistance(
@@ -198,13 +203,16 @@ export default function CustomerDashboard() {
                             />)
                     })}
                 </div>
-            ): (
-                <div className="flex flex-col items-center justify-center gap-4">
-                <h1>Wait for the worker to accept the booking</h1>
-                <Spinner className="size-6" data-icon="inline-start" />
+            ) : isBookingsent && !isBookingAccepted ? (
+                <div className="flex flex-col items-center justify-center gap-4 py-8">
+                    <h1 className="text-xl font-semibold">Wait for the worker to accept the booking</h1>
+                    <Spinner className="size-6" data-icon="inline-start" />
                 </div>
-                
-            )
+            ) : isBookingAccepted ? (
+                <div className="flex flex-col items-center justify-center gap-4 py-8">
+                    <h1 className="text-xl font-semibold text-green-600">Booking confirmed! Worker has accepted your request.</h1>
+                </div>
+            ) : null
         }
 
             {!nearbyWorkers && (

@@ -25,13 +25,13 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
-
+import { useSocket } from "@/utils/socketContext";
 export function NavigationBar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { theme, setTheme } = useTheme();
+  const { setTheme } = useTheme();
   const { data: session } = useSession();
   const router = useRouter();
-  // console.log(session);
+  const { socket, isConnected } = useSocket();
 
   const navItems = [
     {
@@ -51,6 +51,14 @@ export function NavigationBar() {
       link: "/contact-us",
     },
   ];
+
+
+  const handleLogout = async ()=>{
+    await signOut({ callbackUrl: "/" });
+    if(socket && isConnected){
+      socket.emit("disconnect");
+    }
+  }
 
   return (
     <Navbar>
@@ -167,7 +175,7 @@ export function NavigationBar() {
                     Profile
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={() => signOut({ callbackUrl: "/" })}
+                    onClick={handleLogout}
                   >
                     Logout
                   </DropdownMenuItem>

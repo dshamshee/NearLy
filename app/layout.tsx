@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import SessionWrapper from "@/providers/sessionWrapper";
+import { SocketProvider } from "@/utils/socketContext";
 import { Toaster } from "sonner";
 import { NavigationBar } from "@/components/navbar";
 import { GetServerSessionHere } from "./api/auth/[...nextauth]/options";
@@ -46,13 +47,15 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <SessionWrapper>
-            {/* {
-              session ? <NavigationBar /> : null
-            } */}
-            <NavigationBar />
-          {children}
-          <Footer />
-          <Toaster />
+            <SocketProvider>
+              {/* {
+                session ? <NavigationBar /> : null
+              } */}
+              <NavigationBar />
+            {children}
+            <Footer />
+            <Toaster />
+            </SocketProvider>
           </SessionWrapper>
         </ThemeProvider>
       </body>

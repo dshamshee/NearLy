@@ -18,30 +18,32 @@ import { AlertTriangleIcon } from "lucide-react"
 import { getWorkerProfileStatus } from "@/actions/workerProfileStatus";
 import Link from "next/link";
 import { Bookings } from "@/types/booking";
-import { io, Socket } from "socket.io-client";
-import { zodSearchingType } from "@/zod/searching";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useSocket } from "@/utils/socketContext";
+import { Spinner } from "@/components/ui/spinner";
+import { zodIncomingBookingType } from "@/zod/incommingBooking";
 
 
 
 
 export default function WorkerDashboard() {
     const { data: session } = useSession();
+    const {socket, isConnected} = useSocket();
 
     const [isActive, setIsActive] = useState<boolean>(false);
-    const [incomingBooking, setIncomingBooking] = useState<zodSearchingType | null>(null)
+    const [incomingBooking, setIncomingBooking] = useState<zodIncomingBookingType | null>(null)
     const [trackingInterval, setTrackingInterval] = useState<NodeJS.Timeout | null>(null)
     const [isBookingAccepted, setIsBookingAccepted] = useState<boolean>(false);
     const [latitude, setLatitude] = useState<number>(25.5941);
     const [longitude, setLongitude] = useState<number>(85.1376);
     const [isProfileCompleted, setIsProfileCompleted] = useState<boolean>(false);
-    const [socket, setSocket] = useState<Socket | null>(null);
 
     const [locationLoading, setLocationLoading] = useState<boolean>(false);
     const [locationError, setLocationError] = useState<string | null>(null);
     const [currentAddress, setCurrentAddress] = useState<string | null>(null);
     const [addressLoading, setAddressLoading] = useState<boolean>(false);
 
+    // Get worker profile status to check if their profile is completed or not
     useEffect(() => {
         const getWorkerDetails = async () => {
             const response = await getWorkerProfileStatus();
@@ -51,48 +53,39 @@ export default function WorkerDashboard() {
         
     }, [session])
 
+    // Unregister from tracking server when component unmounts (only for workers)
     useEffect(() => {
-        // Initialize socket connection
-        const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000';
-        const newSocket = io(socketUrl, {
-            transports: ['websocket', 'polling'],
-            reconnection: true,
-            reconnectionDelay: 1000,
-            reconnectionAttempts: 5
-        });
-
-        newSocket.on('connect', () => {
-            console.log('Socket connected:', newSocket.id);
-        });
-
-        newSocket.on('disconnect', () => {
-            console.log('Socket disconnected');
-        });
-
-        newSocket.on('connect_error', (error) => {
-            console.error('Socket connection error:', error);
-            toast.error('Failed to connect to tracking server');
-        });
-
-        // Set socket after initialization
-        setTimeout(() => {
-            setSocket(newSocket);
-        }, 1000);
-
-        // Cleanup on unmount
+        // Only unregister on actual component unmount, not on socket reconnects
         return () => {
-            newSocket.disconnect();
+            if(socket && socket.connected && session?.user?._id && session?.user?.role === 'WORKER' && isActive){
+                socket.emit('unregister-active-worker', session?.user?._id);
+            }
         };
-    }, [])
+    }, [socket, session, isActive]) // Removed isConnected to prevent re-running on reconnect
 
+    // Re-register worker when socket reconnects if they were active
+    useEffect(() => {
+        if(!socket || !isConnected || !session?.user?._id || session?.user?.role !== 'WORKER' || !isActive) {
+            return;
+        }
+        
+        // Small delay to ensure socket is fully connected
+        const timeoutId = setTimeout(() => {
+            if(socket.connected) {
+                socket.emit("register-active-worker", session.user._id);
+            }
+        }, 500);
+        
+        return () => clearTimeout(timeoutId);
+    }, [socket, isConnected, session, isActive])
+
+
+    // Handle incoming booking requests
     useEffect(() => {
         if (!socket) return;
 
-        const handleIncomingRequest = async (data: { bookingId: string; jobDetails: zodSearchingType }) => {
-            console.log("Incoming booking request:", data);
-            setIncomingBooking(data.jobDetails);
-            // const currentLocation = await reverseGeocode(data.jobDetails.custLocation.latitude, data.jobDetails.custLocation.longitude);
-            // setCurrentAddress(currentLocation ?? null);
+        const handleIncomingRequest = async (data: zodIncomingBookingType) => {
+            setIncomingBooking(data);
             toast.info("New booking request received!", {
                 position: 'top-right',
                 description: `You have a new booking request. Check details below.`
@@ -107,10 +100,26 @@ export default function WorkerDashboard() {
         };
     }, [socket])
 
+    // Function to accept the booking
+    const handleAcceptBooking = (bookingId: string)=>{
+        if(!socket || !isConnected) return;
+        socket.emit("accept-booking", {bookingId});
+        toast.success("Booking accepted successfully", {
+            position: 'top-right',
+        });
+        setIsBookingAccepted(true);
+        setIncomingBooking(null);
+        toast.success("Booking accepted successfully", {
+            position: 'top-right',
+        });
+        setIsBookingAccepted(true);
+        setIncomingBooking(null);
+    }
+
 
 
     
-  // Function to reverse geocode coordinates to address
+  // Function to reverse geocode coordinates to address and set to the current address state
   const reverseGeocode = useCallback(async (latitude: number, longitude: number) => {
     try {
       setAddressLoading(true);
@@ -142,13 +151,15 @@ export default function WorkerDashboard() {
     }
   }, []);
 
+  // Reverse geocode the incoming booking request's customer location and set to the current address state
   useEffect(()=>{
     if(incomingBooking){
-        reverseGeocode(incomingBooking.custLocation.latitude, incomingBooking.custLocation.longitude);
-        setCurrentAddress(currentAddress ?? null);
+        reverseGeocode(incomingBooking.jobDetails.custLocation.latitude, incomingBooking.jobDetails.custLocation.longitude);
     }
-  },[incomingBooking, currentAddress])
+  },[incomingBooking])
 
+
+  // Function to calculate the distance between two coordinates in meters
   const getDistanceInMeters = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const R = 6371e3; // Earth radius in meters
     const dLat = (lat2 - lat1) * (Math.PI / 180);
@@ -248,6 +259,7 @@ export default function WorkerDashboard() {
         );
     };
 
+    // Function to toggle the availability status of the worker
     const handleAvailabilityToggle = async () => {
         const newStatus = !isActive;
         setIsActive(newStatus);
@@ -255,7 +267,6 @@ export default function WorkerDashboard() {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(async (position) => {
                 try {
-                    console.log("newStatus", newStatus);
                     setLatitude(position.coords.latitude);
                     setLongitude(position.coords.longitude);
                     const response = await updateWorkerStatus(newStatus, position.coords.latitude, position.coords.longitude)
@@ -359,19 +370,29 @@ export default function WorkerDashboard() {
                         <Card className=" mx-auto">
                             {/* <CardHeader> */}
                             {/* </CardHeader> */}
-                            <CardContent className="flex flex-col gap-2">
+                            <CardContent className="flex md:flex-row flex-col items-center justify-between gap-2">
+                                <div>
                                 <CardTitle>
-                                <p className="text-lg font-semibold">Someone find {incomingBooking.workNeededProfession.toLowerCase()} in your area.</p>
+                                <p className="text-lg font-semibold">BOOKING FOR {incomingBooking.jobDetails.workNeededProfession.toUpperCase()}</p>
                                 </CardTitle>
                                 <CardDescription>
-                                    <p className="text-sm text-muted-foreground">Details: {incomingBooking.workNeededDescription}</p>
+                                    <p className="text-sm text-muted-foreground">Details: {incomingBooking.jobDetails.workNeededDescription}</p>
+                                {
+                                    addressLoading ? (
+                                        <p className="text-sm text-muted-foreground animate-pulse">Loading address... <Spinner className="size-4 inline-block" /></p>
+                                    )
+                                    : (
+                                        <p className="text-sm text-muted-foreground">Cutomer Location: {currentAddress ?? "No address found"}</p>
+                                    )
+                                }
+                                <p className="text-sm text-muted-foreground">Distance from you: {getDistanceInMeters(incomingBooking.jobDetails.custLocation.latitude, incomingBooking.jobDetails.custLocation.longitude, latitude, longitude)} Km</p>
                                 </CardDescription>
-                                <p className="text-sm text-muted-foreground">Cutomer Location: {currentAddress ?? "Loading..."}</p>
-                                <p className="text-sm text-muted-foreground">Distance from you: {getDistanceInMeters(incomingBooking.custLocation.latitude, incomingBooking.custLocation.longitude, latitude, longitude)} Km</p>
-                                <Button className="cursor-pointer" variant="outline">Accept Booking</Button>
+                                </div>
+                                <div className="flex flex-row items-center justify-between gap-2">
+                                <Button className="cursor-pointer text-red-500" variant="outline">Reject</Button>
+                                <Button className="cursor-pointer text-green-500" variant="outline" onClick={()=>handleAcceptBooking(incomingBooking.bookingId)}>Accept</Button>
+                                </div>
                             </CardContent>
-                            {/* <CardFooter> */}
-                            {/* </CardFooter> */}
                         </Card>
                     )
                 }
