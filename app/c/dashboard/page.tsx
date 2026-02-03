@@ -66,6 +66,21 @@ export default function CustomerDashboard() {
         };
     }, [socket]);
 
+    // Update customer socket ID when reconnecting with a pending booking
+    useEffect(() => {
+        if (!socket || !isConnected || !trackingBookingId || isBookingAccepted) return;
+
+        // Small delay to ensure socket is fully connected
+        const timeoutId = setTimeout(() => {
+            if (socket.connected && trackingBookingId) {
+                socket.emit("update-customer-socket", { bookingId: trackingBookingId });
+                console.log("Updated customer socket for booking:", trackingBookingId);
+            }
+        }, 500);
+
+        return () => clearTimeout(timeoutId);
+    }, [socket, isConnected, trackingBookingId, isBookingAccepted]);
+
     const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
         const R = 6371e3; // Earth radius in meters
         const dLat = (lat2 - lat1) * (Math.PI / 180);

@@ -22,6 +22,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useSocket } from "@/utils/socketContext";
 import { Spinner } from "@/components/ui/spinner";
 import { zodIncomingBookingType } from "@/zod/incommingBooking";
+import { IncomingMessage } from "http";
 
 
 
@@ -34,6 +35,9 @@ export default function WorkerDashboard() {
     const [incomingBooking, setIncomingBooking] = useState<zodIncomingBookingType | null>(null)
     const [trackingInterval, setTrackingInterval] = useState<NodeJS.Timeout | null>(null)
     const [isBookingAccepted, setIsBookingAccepted] = useState<boolean>(false);
+    const [outForService, setOutForService] = useState<boolean>(false);
+    const [arrivedAtDestination, setArrivedAtDestination] = useState<boolean>(false);
+    const [arrivedNearby, setArrivedNearby] = useState<boolean>(false);
     const [latitude, setLatitude] = useState<number>(25.5941);
     const [longitude, setLongitude] = useState<number>(85.1376);
     const [isProfileCompleted, setIsProfileCompleted] = useState<boolean>(false);
@@ -102,18 +106,80 @@ export default function WorkerDashboard() {
 
     // Function to accept the booking
     const handleAcceptBooking = (bookingId: string)=>{
-        if(!socket || !isConnected) return;
-        socket.emit("accept-booking", {bookingId});
-        toast.success("Booking accepted successfully", {
+       try {
+         if(!socket || !isConnected) return;
+         socket.emit("accept-booking", {bookingId});
+         toast.success("Booking accepted successfully", {
+             position: 'top-right',
+         });
+         setIsBookingAccepted(true);
+         // Keep incomingBooking so the card remains visible after acceptance
+       } catch (error: unknown) {
+        console.log(error instanceof Error ? error.message : "Internal Server Error on accept-booking");
+        toast.error("Something went wrong", {
             position: 'top-right',
         });
-        setIsBookingAccepted(true);
-        setIncomingBooking(null);
-        toast.success("Booking accepted successfully", {
-            position: 'top-right',
-        });
-        setIsBookingAccepted(true);
-        setIncomingBooking(null);
+        setIsBookingAccepted(false);
+       }
+    }
+
+
+    const handleStartNavigation = ()=>{
+        try {
+            if(!socket || !isConnected) return;
+            
+            const interval = setInterval(() => {
+                if(navigator.geolocation){
+                    navigator.geolocation.getCurrentPosition((position)=>{
+                        const location = {
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                        }
+                        socket.emit('update-location', {workerId: session?.user?._id, location});
+                        console.log('updated location: ', location);
+
+                        // Check if the worker has arrived nearby the destination
+                        if(getDistanceInMeters(location.latitude, location.longitude, incomingBooking?.jobDetails.custLocation.latitude ?? 0, incomingBooking?.jobDetails.custLocation.longitude ?? 0) < 50){
+                            setArrivedNearby(true);
+                        }
+                    })
+                }
+
+                // If the worker has arrived at the destination and click the "Arrived" button, then stop the interval
+                if(arrivedAtDestination){
+                    clearInterval(interval);
+                }
+            }, 5000);
+
+            
+        } catch (error: unknown) {
+            console.log(error instanceof Error ? error.message : "Internal Server Error on start-navigation");
+            toast.error("Something went wrong", {
+                position: 'top-right',
+            });
+        }
+    }
+
+
+
+    const handleOutForService = (bookingId: string)=>{
+        try {
+            if(!socket || !isConnected) return;
+            socket.emit("start-navigation", {bookingId});
+            toast.success("You are now out for service", {
+                position: 'top-right',
+            });
+            setOutForService(true);
+            handleStartNavigation();
+            
+        } catch (error: unknown) {
+            console.log(error instanceof Error ? error.message : "Internal Server Error on out-for-service");
+            toast.error("Something went wrong", {
+                position: 'top-right',
+            });
+            setOutForService(false);
+            
+        }
     }
 
 
@@ -366,7 +432,7 @@ export default function WorkerDashboard() {
                 </div>
 
                 {
-                    incomingBooking && (
+                     !arrivedAtDestination && incomingBooking && (
                         <Card className=" mx-auto">
                             {/* <CardHeader> */}
                             {/* </CardHeader> */}
@@ -389,8 +455,10 @@ export default function WorkerDashboard() {
                                 </CardDescription>
                                 </div>
                                 <div className="flex flex-row items-center justify-between gap-2">
-                                <Button className="cursor-pointer text-red-500" variant="outline">Reject</Button>
-                                <Button className="cursor-pointer text-green-500" variant="outline" onClick={()=>handleAcceptBooking(incomingBooking.bookingId)}>Accept</Button>
+                                <Button disabled={isBookingAccepted} className="cursor-pointer text-red-500" variant="outline">Reject</Button>
+                                <Button disabled={isBookingAccepted} className="cursor-pointer text-green-500" variant="outline" onClick={()=>handleAcceptBooking(incomingBooking.bookingId)}>Accept</Button>
+                                <Button disabled={!isBookingAccepted} className="cursor-pointer text-blue-500" variant="outline" onClick={()=> handleOutForService(incomingBooking.bookingId)}>Out for Service</Button>
+                                <Button disabled={!arrivedNearby} className="cursor-pointer text-green-500" variant="outline" onClick={()=> setArrivedAtDestination(true)}>Arrived</Button>
                                 </div>
                             </CardContent>
                         </Card>

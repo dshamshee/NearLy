@@ -43,8 +43,10 @@ export async function updateWorkerStatus(status: boolean, latitude: number, long
 
         worker.isActive = status;
         if (latitude !== undefined && longitude !== undefined) {
-            worker.latitude = new Decimal128(latitude.toString().slice(0, 7));
-            worker.longitude = new Decimal128(longitude.toString().slice(0, 7));
+            // Store coordinates with full precision (no truncation)
+            // Decimal128 can handle full double precision
+            worker.latitude = new Decimal128(latitude.toString());
+            worker.longitude = new Decimal128(longitude.toString());
         }
         await worker.save();
 
