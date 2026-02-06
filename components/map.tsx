@@ -2,104 +2,196 @@
 import { useEffect, useRef } from "react";
 import { setOptions, importLibrary } from "@googlemaps/js-api-loader";
 
-export const Map = ({lat, lng}: {lat: number, lng: number})=>{
+export const Map = ({lat, lng, custLat, custLng}: {lat: number, lng: number, custLat: number, custLng: number})=>{
 
     const mapRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<google.maps.Map | null>(null);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const markerRef = useRef<any>(null);
+    const workerMarkerRef = useRef<any>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const customerMarkerRef = useRef<any>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const directionsRendererRef = useRef<any>(null);
+    const directionsServiceRef = useRef<google.maps.DirectionsService | null>(null);
+    const isInitializedRef = useRef<boolean>(false);
 
     useEffect(()=>{
       const initMap = async ()=>{
-        if (!mapRef.current || mapInstanceRef.current) return; // Prevent re-initialization
+        if (!mapRef.current || isInitializedRef.current) return; // Prevent re-initialization
         
-        // Set options first
+        // Set options for the API loader
         setOptions({
           key: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
         });
 
-        // Import the maps library
+        // Import the maps library - this will load the API if not already loaded
         const { Map } = await importLibrary('maps');
-        
-        const position = {
-            lat: lat,
-            lng: lng,
-        }
+        const { Marker } = await importLibrary('marker') as google.maps.MarkerLibrary;
 
-        // init a marker 
-        const {Marker} = await importLibrary('marker') as google.maps.MarkerLibrary;
+        // Calculate center point between worker and customer
+        const centerLat = (lat + custLat) / 2;
+        const centerLng = (lng + custLng) / 2;
 
         // Map Options
         const mapOptions: google.maps.MapOptions = {
-            center: position,
-            zoom: 17,
+            center: { lat: centerLat, lng: centerLng },
+            zoom: 13,
             mapId: 'MY_NEXTJS_MAP_ID'
         }
 
         // Setup the map
         const map = new Map(mapRef.current as HTMLDivElement, mapOptions);
         mapInstanceRef.current = map;
+        isInitializedRef.current = true;
 
-        // put up a marker 
-        const marker = new Marker({
+        // Create worker marker
+        const workerMarker = new Marker({
             map: map,
-            position: position
+            position: { lat: lat, lng: lng },
+            title: 'Worker Location',
+            icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 8,
+                fillColor: '#4285F4',
+                fillOpacity: 1,
+                strokeColor: '#FFFFFF',
+                strokeWeight: 2,
+            }
         });
-        markerRef.current = marker;
+        workerMarkerRef.current = workerMarker;
+
+        // Create customer marker only if coordinates are valid
+        if (custLat !== 0 && custLng !== 0) {
+          const customerMarker = new Marker({
+              map: map,
+              position: { lat: custLat, lng: custLng },
+              title: 'Customer Location',
+              icon: {
+                  path: google.maps.SymbolPath.CIRCLE,
+                  scale: 8,
+                  fillColor: '#EA4335',
+                  fillOpacity: 1,
+                  strokeColor: '#FFFFFF',
+                  strokeWeight: 2,
+              }
+          });
+          customerMarkerRef.current = customerMarker;
+        }
+
+        // Initialize Directions Service and Renderer
+        const directionsService = new google.maps.DirectionsService();
+        directionsServiceRef.current = directionsService;
+
+        const directionsRenderer = new google.maps.DirectionsRenderer({
+            map: map,
+            suppressMarkers: true, // We'll use our custom markers
+            polylineOptions: {
+                strokeColor: '#4285F4',
+                strokeWeight: 4,
+                strokeOpacity: 0.8,
+            }
+        });
+        directionsRendererRef.current = directionsRenderer;
+
+        // Calculate and display route
+        if (custLat !== 0 && custLng !== 0) {
+          directionsService.route({
+            origin: { lat: lat, lng: lng },
+            destination: { lat: custLat, lng: custLng },
+            travelMode: google.maps.TravelMode.DRIVING,
+          }, (result, status) => {
+            if (status === 'OK' && result && directionsRendererRef.current) {
+              directionsRendererRef.current.setDirections(result);
+              
+              // Fit bounds to show both markers and route
+              const bounds = new google.maps.LatLngBounds();
+              bounds.extend({ lat: lat, lng: lng });
+              bounds.extend({ lat: custLat, lng: custLng });
+              map.fitBounds(bounds);
+            } else {
+              console.error('Directions request failed due to ' + status);
+            }
+          });
+        }
       }
   
       initMap();
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
-    // Update map center and marker position when lat/lng changes
+    // Update worker marker position, customer marker, and route when lat/lng or customer coordinates change
     useEffect(() => {
-      const updateMarkerPosition = async () => {
-        if (!mapInstanceRef.current) return;
+      const updateMap = async () => {
+        if (!isInitializedRef.current || !mapInstanceRef.current || !workerMarkerRef.current || !directionsRendererRef.current || !directionsServiceRef.current) return;
         
-        const newPosition = {
+        const newWorkerPosition = {
           lat: lat,
           lng: lng,
         };
         
-        // Update map center
-        mapInstanceRef.current.setCenter(newPosition);
-        
-        // Remove old marker if it exists
-        if (markerRef.current) {
-          try {
-            // Remove marker from map
-            if (markerRef.current.map !== null && markerRef.current.map !== undefined) {
-              markerRef.current.map = null;
-            }
-          } catch (error) {
-            console.warn('Error removing old marker:', error);
-          }
+        // Update worker marker position
+        if (workerMarkerRef.current) {
+          workerMarkerRef.current.setPosition(newWorkerPosition);
         }
         
-        // Create new marker at new position
-        try {
-          const { Marker } = await importLibrary('marker') as google.maps.MarkerLibrary;
-          const newMarker = new Marker({
-            map: mapInstanceRef.current,
-            position: newPosition
-          });
+        // Create or update customer marker if coordinates are valid
+        if (custLat !== 0 && custLng !== 0) {
+          const customerPosition = { lat: custLat, lng: custLng };
           
-          markerRef.current = newMarker;
-        } catch (error) {
-          console.error('Error creating new marker:', error);
+          if (customerMarkerRef.current) {
+            // Update existing customer marker position
+            customerMarkerRef.current.setPosition(customerPosition);
+          } else {
+            // Create customer marker if it doesn't exist
+            const { Marker } = await importLibrary('marker') as google.maps.MarkerLibrary;
+            const customerMarker = new Marker({
+              map: mapInstanceRef.current,
+              position: customerPosition,
+              title: 'Customer Location',
+              icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 8,
+                fillColor: '#EA4335',
+                fillOpacity: 1,
+                strokeColor: '#FFFFFF',
+                strokeWeight: 2,
+              }
+            });
+            customerMarkerRef.current = customerMarker;
+          }
+          
+          // Update route
+          if (directionsServiceRef.current) {
+            directionsServiceRef.current.route({
+              origin: newWorkerPosition,
+              destination: customerPosition,
+              travelMode: google.maps.TravelMode.DRIVING,
+            }, (result, status) => {
+              if (status === 'OK' && result && directionsRendererRef.current) {
+                directionsRendererRef.current.setDirections(result);
+                
+                // Fit bounds to show both markers and route
+                const bounds = new google.maps.LatLngBounds();
+                bounds.extend(newWorkerPosition);
+                bounds.extend(customerPosition);
+                mapInstanceRef.current?.fitBounds(bounds);
+              } else {
+                console.error('Directions request failed due to ' + status);
+              }
+            });
+          }
         }
       };
       
       // Only update if map is initialized
-      if (mapInstanceRef.current) {
-        updateMarkerPosition();
+      if (isInitializedRef.current) {
+        updateMap();
       }
-    }, [lat, lng]);
+    }, [lat, lng, custLat, custLng]);
 
     return (
         <div className="w-full">
             <div style={{width: '100%', height: '500px'}} className="rounded-lg overflow-hidden" ref={mapRef} />
       </div>
     );
-  };
+  };  

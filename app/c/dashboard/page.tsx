@@ -31,11 +31,17 @@ export default function CustomerDashboard() {
     const [nearbyWorkers, setNearbyWorkers] = useState<NearbyWorkerType[] | null>(null);
     const [trackingBookingId, setTrackingBookingId] = useState<string | null>(null);
     const [isBookingsent, setIsBookingsent] = useState<boolean>(false);
+
+
     const [isBookingAccepted, setIsBookingAccepted] = useState<boolean>(false);
+    const [isWorkerArrived, setIsWorkerArrived] = useState<boolean>(false);
+    const [isWorkerOnTheWay, setIsWorkerOnTheWay] = useState<boolean>(false);
+    const [isServiceStarted, setIsServiceStarted] = useState<boolean>(false);
+    const [workerCurrentLocation, setWorkerCurrentLocation] = useState<{latitude: number, longitude: number} | null>(null);
 
     const { data: session } = useSession();
     console.log(nearbyWorkers);
-    const {socket, isConnected} = useSocket();
+    const { socket, isConnected } = useSocket();
 
     // Listen for booking confirmation from worker
     useEffect(() => {
@@ -57,12 +63,62 @@ export default function CustomerDashboard() {
             setIsBookingsent(false);
         };
 
+        const handleWorkerStartedNavigation = ()=>{
+            setIsWorkerOnTheWay(true);
+            toast.success("Worker is on the way", {
+                position: 'top-right',
+            });
+        }
+
+        const handleStartNavigationError = (error: { message: string })=>{
+            toast.error(error.message || "Something went wrong", {
+                position: 'top-right',
+            });
+            setIsWorkerOnTheWay(false);
+        }
+
+        const handleLocationBroadcast = (location: {latitude: number, longitude: number})=>{
+            setWorkerCurrentLocation(location);
+        }
+
+        const handleUpdateLocationError = (error: { message: string })=>{
+            toast.error(error.message || "Something went wrong", {
+                position: 'top-right',
+            });
+            setWorkerCurrentLocation(null);
+        }
+
+        const handleWorkerArrived = ()=>{
+            setIsWorkerArrived(true);
+            setIsServiceStarted(true);
+            toast.success("Service has started", {
+                position: 'top-right',
+            });
+        }
+
+        const handleConfirmReachedError = (error: { message: string })=>{
+            toast.error(error.message || "Something went wrong", {
+                position: 'top-right',
+            });
+            setIsWorkerArrived(false);
+            setIsServiceStarted(false);
+        }
+
         socket.on("booking-confirmed", handleBookingConfirmed);
         socket.on("booking-request-error", handleBookingError);
+        socket.on("worker-started-navigation", handleWorkerStartedNavigation);
+        socket.on('location-broadcast', handleLocationBroadcast);
+        socket.on("worker-arrived", handleWorkerArrived);
+        socket.on("start-navigation-error", handleStartNavigationError);
+        socket.on("update-location-error", handleUpdateLocationError);
+        socket.on("confirm-reached-error", handleConfirmReachedError);
 
         return () => {
             socket.off("booking-confirmed", handleBookingConfirmed);
             socket.off("booking-request-error", handleBookingError);
+            socket.off("worker-started-navigation", handleWorkerStartedNavigation);
+            socket.off('location-broadcast', handleLocationBroadcast);
+            socket.off("worker-arrived", handleWorkerArrived);
         };
     }, [socket]);
 
@@ -137,12 +193,12 @@ export default function CustomerDashboard() {
 
 
     // Function to send a booking request to a worker
-    const sendBookingRequest = (workerId: string)=>{
+    const sendBookingRequest = (workerId: string) => {
         if (!socket || !isConnected) {
             toast.error("Not connected to server. Please wait...");
             return;
         }
-        
+
         if (!bookingDetails) {
             toast.error("Booking details are missing");
             return;
@@ -150,13 +206,13 @@ export default function CustomerDashboard() {
 
         const bookingId = `${session?.user?._id}-${workerId}`;
         setTrackingBookingId(bookingId);
-        
+
         socket.emit("send-booking-request", {
             bookingId: bookingId,
             selectedWorkerId: workerId,
             jobDetails: bookingDetails
         });
-        
+
         console.log("Booking request sent:", { bookingId, selectedWorkerId: workerId });
         setIsBookingsent(true);
         toast.success("Booking request sent successfully");
@@ -187,7 +243,7 @@ export default function CustomerDashboard() {
                     </div>
                 </div>
                 <div className={`mapSection w-full h-full ${mapLoaded ? 'block' : 'hidden'}`}>
-                    <Map lat={bookingDetails?.custLocation.latitude ?? 0} lng={bookingDetails?.custLocation.longitude ?? 0} />
+                    <Map lat={22.3033} lng={73.2002} custLat={bookingDetails?.custLocation.latitude ?? 0} custLng={bookingDetails?.custLocation.longitude ?? 0} />
                 </div>
 
             </div>
@@ -202,7 +258,7 @@ export default function CustomerDashboard() {
                             toNumber(worker.latitude),
                             toNumber(worker.longitude)
                         );
-                    
+
                         return (
                             <NearbyWorkers
                                 key={worker.userId._id.toString()}
@@ -228,16 +284,16 @@ export default function CustomerDashboard() {
                     <h1 className="text-xl font-semibold text-green-600">Booking confirmed! Worker has accepted your request.</h1>
                 </div>
             ) : null
-        }
+            }
 
             {!nearbyWorkers && (
                 <div className="recentProfessionals mt-10">
-                <h2 className="md:text-2xl text-xl font-bold text-foreground mb-2">Recent Professionals</h2>
-                <div className="recentProfessionalsList grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <RecentProfessionals name="Mehul Dalvadi" avatar="https://github.com/shadcn.png" experience={10} location={4} rating={4.5} />
-                    <RecentProfessionals name="Sivaniba Bhadoriya" avatar="https://github.com/shadcn.png" experience={5} location={2} rating={4.0} />
-                    <RecentProfessionals name="Vivek Dave" avatar="https://github.com/shadcn.png" experience={3} location={1} rating={3.5} />
-                </div>
+                    <h2 className="md:text-2xl text-xl font-bold text-foreground mb-2">Recent Professionals</h2>
+                    <div className="recentProfessionalsList grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <RecentProfessionals name="Mehul Dalvadi" avatar="https://github.com/shadcn.png" experience={10} location={4} rating={4.5} />
+                        <RecentProfessionals name="Sivaniba Bhadoriya" avatar="https://github.com/shadcn.png" experience={5} location={2} rating={4.0} />
+                        <RecentProfessionals name="Vivek Dave" avatar="https://github.com/shadcn.png" experience={3} location={1} rating={3.5} />
+                    </div>
                 </div>
             )
 
@@ -251,4 +307,4 @@ export default function CustomerDashboard() {
     )
 }
 
-{/*  */}
+{/*  */ }

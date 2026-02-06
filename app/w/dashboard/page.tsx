@@ -3,7 +3,7 @@
 import { updateWorkerStatus } from "@/actions/updateWorkerStatus";
 import { Switch } from "@/components/ui/switch";
 import { Calendar, Clock, DollarSign, Briefcase, User, CheckCircle2, XCircle, Clock3 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { Map } from "@/components/map";
@@ -17,12 +17,10 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangleIcon } from "lucide-react"
 import { getWorkerProfileStatus } from "@/actions/workerProfileStatus";
 import Link from "next/link";
-import { Bookings } from "@/types/booking";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { useSocket } from "@/utils/socketContext";
 import { Spinner } from "@/components/ui/spinner";
 import { zodIncomingBookingType } from "@/zod/incommingBooking";
-import { IncomingMessage } from "http";
 
 
 
@@ -33,7 +31,6 @@ export default function WorkerDashboard() {
 
     const [isActive, setIsActive] = useState<boolean>(false);
     const [incomingBooking, setIncomingBooking] = useState<zodIncomingBookingType | null>(null)
-    const [trackingInterval, setTrackingInterval] = useState<NodeJS.Timeout | null>(null)
     const [isBookingAccepted, setIsBookingAccepted] = useState<boolean>(false);
     const [outForService, setOutForService] = useState<boolean>(false);
     const [arrivedAtDestination, setArrivedAtDestination] = useState<boolean>(false);
@@ -41,11 +38,19 @@ export default function WorkerDashboard() {
     const [latitude, setLatitude] = useState<number>(25.5941);
     const [longitude, setLongitude] = useState<number>(85.1376);
     const [isProfileCompleted, setIsProfileCompleted] = useState<boolean>(false);
+    const [workDoneInterval, setWorkDoneInterval] = useState<number>(5);
 
     const [locationLoading, setLocationLoading] = useState<boolean>(false);
     const [locationError, setLocationError] = useState<string | null>(null);
     const [currentAddress, setCurrentAddress] = useState<string | null>(null);
     const [addressLoading, setAddressLoading] = useState<boolean>(false);
+    
+    // Ref to store the location sharing interval ID
+    const locationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    // Ref to store incomingBooking to avoid closure issues
+    const incomingBookingRef = useRef<zodIncomingBookingType | null>(null);
+    // Ref to store the work done interval ID
+    const workDoneIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     // Get worker profile status to check if their profile is completed or not
     useEffect(() => {
@@ -83,6 +88,33 @@ export default function WorkerDashboard() {
         return () => clearTimeout(timeoutId);
     }, [socket, isConnected, session, isActive])
 
+    // Stop location sharing when worker arrives at destination
+    useEffect(() => {
+        if(arrivedAtDestination && locationIntervalRef.current){
+            clearInterval(locationIntervalRef.current);
+            locationIntervalRef.current = null;
+        }
+    }, [arrivedAtDestination])
+
+    // Cleanup intervals on component unmount
+    useEffect(() => {
+        return () => {
+            if(locationIntervalRef.current){
+                clearInterval(locationIntervalRef.current);
+                locationIntervalRef.current = null;
+            }
+            if(workDoneIntervalRef.current){
+                clearInterval(workDoneIntervalRef.current);
+                workDoneIntervalRef.current = null;
+            }
+        };
+    }, [])
+
+    // Keep incomingBookingRef in sync with incomingBooking state
+    useEffect(() => {
+        incomingBookingRef.current = incomingBooking;
+    }, [incomingBooking])
+
 
     // Handle incoming booking requests
     useEffect(() => {
@@ -90,6 +122,15 @@ export default function WorkerDashboard() {
 
         const handleIncomingRequest = async (data: zodIncomingBookingType) => {
             setIncomingBooking(data);
+            // Reset arrivedNearby when receiving a new booking
+            setArrivedNearby(false);
+            setArrivedAtDestination(false);
+            // Clear and reset work done interval
+            if(workDoneIntervalRef.current){
+                clearInterval(workDoneIntervalRef.current);
+                workDoneIntervalRef.current = null;
+            }
+            setWorkDoneInterval(0);
             toast.info("New booking request received!", {
                 position: 'top-right',
                 description: `You have a new booking request. Check details below.`
@@ -113,6 +154,14 @@ export default function WorkerDashboard() {
              position: 'top-right',
          });
          setIsBookingAccepted(true);
+         // Reset arrivedNearby when accepting a new booking
+         setArrivedNearby(false);
+         // Clear and reset work done interval
+         if(workDoneIntervalRef.current){
+             clearInterval(workDoneIntervalRef.current);
+             workDoneIntervalRef.current = null;
+         }
+         setWorkDoneInterval(0);
          // Keep incomingBooking so the card remains visible after acceptance
        } catch (error: unknown) {
         console.log(error instanceof Error ? error.message : "Internal Server Error on accept-booking");
@@ -124,33 +173,97 @@ export default function WorkerDashboard() {
     }
 
 
+    // Helper function to check location and update state
+    const checkLocationAndUpdate = (position: GeolocationPosition) => {
+        const location = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+        };
+        
+        // Update latitude and longitude state
+        setLatitude(location.latitude);
+        setLongitude(location.longitude);
+        
+        // Emit location update to server
+        if(socket && session?.user?._id){
+            socket.emit('update-location', {workerId: session.user._id, location});
+            console.log('updated location: ', location);
+        }
+
+        // Check if the worker has arrived nearby the destination using ref to avoid closure issues
+        const booking = incomingBookingRef.current;
+        if(booking?.jobDetails?.custLocation?.latitude && booking?.jobDetails?.custLocation?.longitude){
+            const distance = getDistanceInMeters(
+                location.latitude, 
+                location.longitude, 
+                booking.jobDetails.custLocation.latitude, 
+                booking.jobDetails.custLocation.longitude
+            );
+            
+            console.log('Distance to destination:', distance, 'meters');
+            
+            if(distance < 50){
+                setArrivedNearby(true);
+            }
+        }
+    };
+
+
+    // Function to send the worker's location update to the customer
     const handleStartNavigation = ()=>{
         try {
             if(!socket || !isConnected) return;
             
+            // Clear any existing interval before starting a new one
+            if(locationIntervalRef.current){
+                clearInterval(locationIntervalRef.current);
+                locationIntervalRef.current = null;
+            }
+            
+            // Reset arrivedNearby state when starting navigation
+            setArrivedNearby(false);
+            
+            // Check location immediately when starting navigation
+            if(navigator.geolocation){
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        checkLocationAndUpdate(position);
+                    },
+                    (error) => {
+                        console.error('Geolocation error:', error);
+                        toast.error("Unable to get your location. Please enable location access.", {
+                            position: 'top-right',
+                        });
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    }
+                );
+            }
+            
+            // Set up interval to check location every 5 seconds
             const interval = setInterval(() => {
                 if(navigator.geolocation){
-                    navigator.geolocation.getCurrentPosition((position)=>{
-                        const location = {
-                            latitude: position.coords.latitude,
-                            longitude: position.coords.longitude,
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            checkLocationAndUpdate(position);
+                        },
+                        (error) => {
+                            console.error('Geolocation error in interval:', error);
+                        },
+                        {
+                            enableHighAccuracy: true,
+                            timeout: 10000,
+                            maximumAge: 0
                         }
-                        socket.emit('update-location', {workerId: session?.user?._id, location});
-                        console.log('updated location: ', location);
-
-                        // Check if the worker has arrived nearby the destination
-                        if(getDistanceInMeters(location.latitude, location.longitude, incomingBooking?.jobDetails.custLocation.latitude ?? 0, incomingBooking?.jobDetails.custLocation.longitude ?? 0) < 50){
-                            setArrivedNearby(true);
-                        }
-                    })
-                }
-
-                // If the worker has arrived at the destination and click the "Arrived" button, then stop the interval
-                if(arrivedAtDestination){
-                    clearInterval(interval);
+                    );
                 }
             }, 5000);
-
+            
+            // Store the interval ID in the ref
+            locationIntervalRef.current = interval;
             
         } catch (error: unknown) {
             console.log(error instanceof Error ? error.message : "Internal Server Error on start-navigation");
@@ -162,6 +275,7 @@ export default function WorkerDashboard() {
 
 
 
+    // Function to notify the customer that the worker is on the way and start navigation
     const handleOutForService = (bookingId: string)=>{
         try {
             if(!socket || !isConnected) return;
@@ -184,6 +298,70 @@ export default function WorkerDashboard() {
 
 
 
+    // Function to notify the customer that the worker has arrived at the location and the service is started
+    const handleStartWorking = ()=>{
+        // Stop location sharing when worker arrives
+        if(locationIntervalRef.current){
+            clearInterval(locationIntervalRef.current);
+            locationIntervalRef.current = null;
+        }
+        
+        // Clear any existing work interval before starting a new one
+        if(workDoneIntervalRef.current){
+            clearInterval(workDoneIntervalRef.current);
+            workDoneIntervalRef.current = null;
+        }
+        
+        setArrivedAtDestination(true);
+        setArrivedNearby(false);
+        
+        // Set initial countdown value (5 seconds)
+        setWorkDoneInterval(5);
+        
+        // Start countdown interval
+        const interval = setInterval(()=>{
+            setWorkDoneInterval((prev)=> {
+                const newValue = prev - 1;
+                
+                // Clear interval when countdown reaches 0 or below
+                if(newValue <= 0){
+                    if(workDoneIntervalRef.current){
+                        clearInterval(workDoneIntervalRef.current);
+                        workDoneIntervalRef.current = null;
+                    }
+                    return 0;
+                }
+                
+                return newValue;
+            });
+        }, 1000);
+        
+        // Store the interval ID in the ref
+        workDoneIntervalRef.current = interval;
+
+
+        // Notify the customer 
+        try {
+            if(!socket || !isConnected) return;
+
+            socket?.emit("confirm-reached", {bookingId: incomingBooking?.bookingId});
+            toast.success("You have arrived at the location", {
+                position: 'top-right',
+            });
+        } catch (error: unknown) {
+            console.log(error instanceof Error ? error.message : "Internal Server Error on handleStartWorking");
+            toast.error("Something went wrong", {
+                position: 'top-right',
+            });
+            
+            setWorkDoneInterval(0);
+        }
+    }
+
+
+    const handleWorkDone = ()=>{
+        console.log("Work done");
+    }
     
   // Function to reverse geocode coordinates to address and set to the current address state
   const reverseGeocode = useCallback(async (latitude: number, longitude: number) => {
@@ -432,7 +610,7 @@ export default function WorkerDashboard() {
                 </div>
 
                 {
-                     !arrivedAtDestination && incomingBooking && (
+                    incomingBooking && (
                         <Card className=" mx-auto">
                             {/* <CardHeader> */}
                             {/* </CardHeader> */}
@@ -454,11 +632,12 @@ export default function WorkerDashboard() {
                                 <p className="text-sm text-muted-foreground">Distance from you: {getDistanceInMeters(incomingBooking.jobDetails.custLocation.latitude, incomingBooking.jobDetails.custLocation.longitude, latitude, longitude)} Km</p>
                                 </CardDescription>
                                 </div>
-                                <div className="flex flex-row items-center justify-between gap-2">
+                                <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
                                 <Button disabled={isBookingAccepted} className="cursor-pointer text-red-500" variant="outline">Reject</Button>
                                 <Button disabled={isBookingAccepted} className="cursor-pointer text-green-500" variant="outline" onClick={()=>handleAcceptBooking(incomingBooking.bookingId)}>Accept</Button>
-                                <Button disabled={!isBookingAccepted} className="cursor-pointer text-blue-500" variant="outline" onClick={()=> handleOutForService(incomingBooking.bookingId)}>Out for Service</Button>
-                                <Button disabled={!arrivedNearby} className="cursor-pointer text-green-500" variant="outline" onClick={()=> setArrivedAtDestination(true)}>Arrived</Button>
+                                <Button disabled={!isBookingAccepted || outForService} className="cursor-pointer text-blue-500" variant="outline" onClick={()=> handleOutForService(incomingBooking.bookingId)}>Out for Service</Button>
+                                <Button disabled={!arrivedNearby} className="cursor-pointer text-green-500" variant="outline" onClick={handleStartWorking}>Arrived</Button>
+                                <Button disabled={workDoneInterval !== 0} className="cursor-pointer text-green-500" variant="outline" onClick={handleWorkDone}>{workDoneInterval !== 0 ? `${workDoneInterval} sec` : "Done"}</Button>
                                 </div>
                             </CardContent>
                         </Card>
@@ -466,7 +645,7 @@ export default function WorkerDashboard() {
                 }
 
                 <div className={`map ${isBookingAccepted ? 'block' : 'hidden'}`}>
-                    <Map lat={latitude} lng={longitude} />
+                    <Map lat={latitude} lng={longitude} custLat={incomingBooking?.jobDetails?.custLocation?.latitude ?? 0} custLng={incomingBooking?.jobDetails?.custLocation?.longitude ?? 0} />
                 </div>
 
                 {/* Stats Cards */}
