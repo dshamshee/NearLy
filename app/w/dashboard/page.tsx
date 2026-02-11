@@ -36,8 +36,8 @@ export default function WorkerDashboard() {
     const [outForService, setOutForService] = useState<boolean>(false);
     const [arrivedAtDestination, setArrivedAtDestination] = useState<boolean>(false);
     const [arrivedNearby, setArrivedNearby] = useState<boolean>(false);
-    const [latitude, setLatitude] = useState<number | null>(null);
-    const [longitude, setLongitude] = useState<number | null>(null);
+    const [latitude, setLatitude] = useState<number>(0);
+    const [longitude, setLongitude] = useState<number>(0);
     const [isProfileCompleted, setIsProfileCompleted] = useState<boolean>(false);
     const [workDoneInterval, setWorkDoneInterval] = useState<number>(5);
 
