@@ -1,7 +1,11 @@
 import { Suspense } from "react";
 import { LoadingSkeleton } from "@/components/loadingSkeleton";
 
-export default function WorkerLayout({
+
+
+
+
+export default function CustomerLayout({
     children,
   }: Readonly<{
     children: React.ReactNode;

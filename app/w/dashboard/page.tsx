@@ -27,9 +27,10 @@ import { zodIncomingBookingType } from "@/zod/incommingBooking";
 
 export default function WorkerDashboard() {
     const { data: session } = useSession();
-    const {socket, isConnected} = useSocket();
+    const { socket, isConnected } = useSocket();
 
     const [isActive, setIsActive] = useState<boolean>(false);
+    const [isActiveLoading, setIsActiveLoading] = useState<boolean>(false);
     const [incomingBooking, setIncomingBooking] = useState<zodIncomingBookingType | null>(null)
     const [isBookingAccepted, setIsBookingAccepted] = useState<boolean>(false);
     const [outForService, setOutForService] = useState<boolean>(false);
@@ -44,7 +45,7 @@ export default function WorkerDashboard() {
     const [locationError, setLocationError] = useState<string | null>(null);
     const [currentAddress, setCurrentAddress] = useState<string | null>(null);
     const [addressLoading, setAddressLoading] = useState<boolean>(false);
-    
+
     // Ref to store the location sharing interval ID
     const locationIntervalRef = useRef<NodeJS.Timeout | null>(null);
     // Ref to store incomingBooking to avoid closure issues
@@ -59,14 +60,30 @@ export default function WorkerDashboard() {
             setIsProfileCompleted(response.data!)
         }
         getWorkerDetails();
-        
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                setLatitude(position.coords.latitude);
+                setLongitude(position.coords.longitude);
+            }, (error) => {
+                console.error('Geolocation error:', error);
+                toast.error("Unable to get your location. Please enable location access.", {
+                    position: 'top-right',
+                });
+            }, {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            })
+        }
+
     }, [session])
 
     // Unregister from tracking server when component unmounts (only for workers)
     useEffect(() => {
         // Only unregister on actual component unmount, not on socket reconnects
         return () => {
-            if(socket && socket.connected && session?.user?._id && session?.user?.role === 'WORKER' && isActive){
+            if (socket && socket.connected && session?.user?._id && session?.user?.role === 'WORKER' && isActive) {
                 socket.emit('unregister-active-worker', session?.user?._id);
             }
         };
@@ -74,23 +91,23 @@ export default function WorkerDashboard() {
 
     // Re-register worker when socket reconnects if they were active
     useEffect(() => {
-        if(!socket || !isConnected || !session?.user?._id || session?.user?.role !== 'WORKER' || !isActive) {
+        if (!socket || !isConnected || !session?.user?._id || session?.user?.role !== 'WORKER' || !isActive) {
             return;
         }
-        
+
         // Small delay to ensure socket is fully connected
         const timeoutId = setTimeout(() => {
-            if(socket.connected) {
+            if (socket.connected) {
                 socket.emit("register-active-worker", session.user._id);
             }
         }, 500);
-        
+
         return () => clearTimeout(timeoutId);
     }, [socket, isConnected, session, isActive])
 
     // Stop location sharing when worker arrives at destination
     useEffect(() => {
-        if(arrivedAtDestination && locationIntervalRef.current){
+        if (arrivedAtDestination && locationIntervalRef.current) {
             clearInterval(locationIntervalRef.current);
             locationIntervalRef.current = null;
         }
@@ -99,11 +116,11 @@ export default function WorkerDashboard() {
     // Cleanup intervals on component unmount
     useEffect(() => {
         return () => {
-            if(locationIntervalRef.current){
+            if (locationIntervalRef.current) {
                 clearInterval(locationIntervalRef.current);
                 locationIntervalRef.current = null;
             }
-            if(workDoneIntervalRef.current){
+            if (workDoneIntervalRef.current) {
                 clearInterval(workDoneIntervalRef.current);
                 workDoneIntervalRef.current = null;
             }
@@ -126,7 +143,7 @@ export default function WorkerDashboard() {
             setArrivedNearby(false);
             setArrivedAtDestination(false);
             // Clear and reset work done interval
-            if(workDoneIntervalRef.current){
+            if (workDoneIntervalRef.current) {
                 clearInterval(workDoneIntervalRef.current);
                 workDoneIntervalRef.current = null;
             }
@@ -146,30 +163,30 @@ export default function WorkerDashboard() {
     }, [socket])
 
     // Function to accept the booking
-    const handleAcceptBooking = (bookingId: string)=>{
-       try {
-         if(!socket || !isConnected) return;
-         socket.emit("accept-booking", {bookingId});
-         toast.success("Booking accepted successfully", {
-             position: 'top-right',
-         });
-         setIsBookingAccepted(true);
-         // Reset arrivedNearby when accepting a new booking
-         setArrivedNearby(false);
-         // Clear and reset work done interval
-         if(workDoneIntervalRef.current){
-             clearInterval(workDoneIntervalRef.current);
-             workDoneIntervalRef.current = null;
-         }
-         setWorkDoneInterval(0);
-         // Keep incomingBooking so the card remains visible after acceptance
-       } catch (error: unknown) {
-        console.log(error instanceof Error ? error.message : "Internal Server Error on accept-booking");
-        toast.error("Something went wrong", {
-            position: 'top-right',
-        });
-        setIsBookingAccepted(false);
-       }
+    const handleAcceptBooking = (bookingId: string) => {
+        try {
+            if (!socket || !isConnected) return;
+            socket.emit("accept-booking", { bookingId });
+            toast.success("Booking accepted successfully", {
+                position: 'top-right',
+            });
+            setIsBookingAccepted(true);
+            // Reset arrivedNearby when accepting a new booking
+            setArrivedNearby(false);
+            // Clear and reset work done interval
+            if (workDoneIntervalRef.current) {
+                clearInterval(workDoneIntervalRef.current);
+                workDoneIntervalRef.current = null;
+            }
+            setWorkDoneInterval(0);
+            // Keep incomingBooking so the card remains visible after acceptance
+        } catch (error: unknown) {
+            console.log(error instanceof Error ? error.message : "Internal Server Error on accept-booking");
+            toast.error("Something went wrong", {
+                position: 'top-right',
+            });
+            setIsBookingAccepted(false);
+        }
     }
 
 
@@ -179,30 +196,30 @@ export default function WorkerDashboard() {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
         };
-        
+
         // Update latitude and longitude state
         setLatitude(location.latitude);
         setLongitude(location.longitude);
-        
+
         // Emit location update to server
-        if(socket && session?.user?._id){
-            socket.emit('update-location', {workerId: session.user._id, location});
+        if (socket && session?.user?._id) {
+            socket.emit('update-location', { workerId: session.user._id, location });
             console.log('updated location: ', location);
         }
 
         // Check if the worker has arrived nearby the destination using ref to avoid closure issues
         const booking = incomingBookingRef.current;
-        if(booking?.jobDetails?.custLocation?.latitude && booking?.jobDetails?.custLocation?.longitude){
+        if (booking?.jobDetails?.custLocation?.latitude && booking?.jobDetails?.custLocation?.longitude) {
             const distance = getDistanceInMeters(
-                location.latitude, 
-                location.longitude, 
-                booking.jobDetails.custLocation.latitude, 
+                location.latitude,
+                location.longitude,
+                booking.jobDetails.custLocation.latitude,
                 booking.jobDetails.custLocation.longitude
             );
-            
+
             console.log('Distance to destination:', distance, 'meters');
-            
-            if(distance < 50){
+
+            if (distance < 50) {
                 setArrivedNearby(true);
             }
         }
@@ -210,21 +227,21 @@ export default function WorkerDashboard() {
 
 
     // Function to send the worker's location update to the customer
-    const handleStartNavigation = ()=>{
+    const handleStartNavigation = () => {
         try {
-            if(!socket || !isConnected) return;
-            
+            if (!socket || !isConnected) return;
+
             // Clear any existing interval before starting a new one
-            if(locationIntervalRef.current){
+            if (locationIntervalRef.current) {
                 clearInterval(locationIntervalRef.current);
                 locationIntervalRef.current = null;
             }
-            
+
             // Reset arrivedNearby state when starting navigation
             setArrivedNearby(false);
-            
+
             // Check location immediately when starting navigation
-            if(navigator.geolocation){
+            if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         checkLocationAndUpdate(position);
@@ -242,10 +259,10 @@ export default function WorkerDashboard() {
                     }
                 );
             }
-            
+
             // Set up interval to check location every 5 seconds
             const interval = setInterval(() => {
-                if(navigator.geolocation){
+                if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(
                         (position) => {
                             checkLocationAndUpdate(position);
@@ -261,10 +278,10 @@ export default function WorkerDashboard() {
                     );
                 }
             }, 5000);
-            
+
             // Store the interval ID in the ref
             locationIntervalRef.current = interval;
-            
+
         } catch (error: unknown) {
             console.log(error instanceof Error ? error.message : "Internal Server Error on start-navigation");
             toast.error("Something went wrong", {
@@ -276,75 +293,75 @@ export default function WorkerDashboard() {
 
 
     // Function to notify the customer that the worker is on the way and start navigation
-    const handleOutForService = (bookingId: string)=>{
+    const handleOutForService = (bookingId: string) => {
         try {
-            if(!socket || !isConnected) return;
-            socket.emit("start-navigation", {bookingId});
+            if (!socket || !isConnected) return;
+            socket.emit("start-navigation", { bookingId });
             toast.success("You are now out for service", {
                 position: 'top-right',
             });
             setOutForService(true);
             handleStartNavigation();
-            
+
         } catch (error: unknown) {
             console.log(error instanceof Error ? error.message : "Internal Server Error on out-for-service");
             toast.error("Something went wrong", {
                 position: 'top-right',
             });
             setOutForService(false);
-            
+
         }
     }
 
 
 
     // Function to notify the customer that the worker has arrived at the location and the service is started
-    const handleStartWorking = ()=>{
+    const handleStartWorking = () => {
         // Stop location sharing when worker arrives
-        if(locationIntervalRef.current){
+        if (locationIntervalRef.current) {
             clearInterval(locationIntervalRef.current);
             locationIntervalRef.current = null;
         }
-        
+
         // Clear any existing work interval before starting a new one
-        if(workDoneIntervalRef.current){
+        if (workDoneIntervalRef.current) {
             clearInterval(workDoneIntervalRef.current);
             workDoneIntervalRef.current = null;
         }
-        
+
         setArrivedAtDestination(true);
         setArrivedNearby(false);
-        
+
         // Set initial countdown value (5 seconds)
         setWorkDoneInterval(5);
-        
+
         // Start countdown interval
-        const interval = setInterval(()=>{
-            setWorkDoneInterval((prev)=> {
+        const interval = setInterval(() => {
+            setWorkDoneInterval((prev) => {
                 const newValue = prev - 1;
-                
+
                 // Clear interval when countdown reaches 0 or below
-                if(newValue <= 0){
-                    if(workDoneIntervalRef.current){
+                if (newValue <= 0) {
+                    if (workDoneIntervalRef.current) {
                         clearInterval(workDoneIntervalRef.current);
                         workDoneIntervalRef.current = null;
                     }
                     return 0;
                 }
-                
+
                 return newValue;
             });
         }, 1000);
-        
+
         // Store the interval ID in the ref
         workDoneIntervalRef.current = interval;
 
 
         // Notify the customer 
         try {
-            if(!socket || !isConnected) return;
+            if (!socket || !isConnected) return;
 
-            socket?.emit("confirm-reached", {bookingId: incomingBooking?.bookingId});
+            socket?.emit("confirm-reached", { bookingId: incomingBooking?.bookingId });
             toast.success("You have arrived at the location", {
                 position: 'top-right',
             });
@@ -353,66 +370,66 @@ export default function WorkerDashboard() {
             toast.error("Something went wrong", {
                 position: 'top-right',
             });
-            
+
             setWorkDoneInterval(0);
         }
     }
 
 
-    const handleWorkDone = ()=>{
+    const handleWorkDone = () => {
         console.log("Work done");
     }
-    
-  // Function to reverse geocode coordinates to address and set to the current address state
-  const reverseGeocode = useCallback(async (latitude: number, longitude: number) => {
-    try {
-      setAddressLoading(true);
-      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-      if (!apiKey) {
-        console.warn("Google Maps API key not found");
-        return;
-      }
 
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
-      );
-      
-      const data = await response.json();
-      
-      if (data.status === 'OK' && data.results && data.results.length > 0) {
-        // Get the formatted address (first result is usually the most specific)
-        const address = data.results[0].formatted_address;
-        setCurrentAddress(address);
-      } else {
-        console.warn("Geocoding failed:", data.status);
-        setCurrentAddress(null);
-      }
-    } catch (error) {
-      console.error("Error reverse geocoding:", error);
-      setCurrentAddress(null);
-    } finally {
-      setAddressLoading(false);
+    // Function to reverse geocode coordinates to address and set to the current address state
+    const reverseGeocode = useCallback(async (latitude: number, longitude: number) => {
+        try {
+            setAddressLoading(true);
+            const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+            if (!apiKey) {
+                console.warn("Google Maps API key not found");
+                return;
+            }
+
+            const response = await fetch(
+                `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
+            );
+
+            const data = await response.json();
+
+            if (data.status === 'OK' && data.results && data.results.length > 0) {
+                // Get the formatted address (first result is usually the most specific)
+                const address = data.results[0].formatted_address;
+                setCurrentAddress(address);
+            } else {
+                console.warn("Geocoding failed:", data.status);
+                setCurrentAddress(null);
+            }
+        } catch (error) {
+            console.error("Error reverse geocoding:", error);
+            setCurrentAddress(null);
+        } finally {
+            setAddressLoading(false);
+        }
+    }, []);
+
+    // Reverse geocode the incoming booking request's customer location and set to the current address state
+    useEffect(() => {
+        if (incomingBooking) {
+            reverseGeocode(incomingBooking.jobDetails.custLocation.latitude, incomingBooking.jobDetails.custLocation.longitude);
+        }
+    }, [incomingBooking])
+
+
+    // Function to calculate the distance between two coordinates in meters
+    const getDistanceInMeters = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+        const R = 6371e3; // Earth radius in meters
+        const dLat = (lat2 - lat1) * (Math.PI / 180);
+        const dLon = (lon2 - lon1) * (Math.PI / 180);
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const d = R * c;
+        return d;
     }
-  }, []);
-
-  // Reverse geocode the incoming booking request's customer location and set to the current address state
-  useEffect(()=>{
-    if(incomingBooking){
-        reverseGeocode(incomingBooking.jobDetails.custLocation.latitude, incomingBooking.jobDetails.custLocation.longitude);
-    }
-  },[incomingBooking])
-
-
-  // Function to calculate the distance between two coordinates in meters
-  const getDistanceInMeters = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371e3; // Earth radius in meters
-    const dLat = (lat2 - lat1) * (Math.PI / 180);
-    const dLon = (lon2 - lon1) * (Math.PI / 180);
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const d = R * c;
-    return d;
-  }
 
 
 
@@ -505,52 +522,47 @@ export default function WorkerDashboard() {
 
     // Function to toggle the availability status of the worker
     const handleAvailabilityToggle = async () => {
+        setIsActiveLoading(true);
         const newStatus = !isActive;
-        setIsActive(newStatus);
-
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(async (position) => {
-                try {
-                    setLatitude(position.coords.latitude);
-                    setLongitude(position.coords.longitude);
-                    const response = await updateWorkerStatus(newStatus, position.coords.latitude, position.coords.longitude)
-
-                    if (response && response.success) {
-                        if (newStatus) {
-                            toast.success("You're now available for bookings", { position: 'top-right' })
-                            // Register with tracking server after successful status update
-                            if (socket && socket.connected) {
+        try {
+            if (latitude && longitude) {
+                const response =  await updateWorkerStatus(newStatus, latitude, longitude);
+                
+                if (response.success) {
+                    setIsActive(newStatus);
+                    if (newStatus) {
+                        
+                        // Register with tracking server after successful status update
+                        if (socket && socket.connected) {
+                            socket.emit("register-active-worker", session?.user?._id);
+                            toast.success("You are now available for bookings", { position: 'top-right' })
+                        } else if (socket && !socket.connected) {
+                            // Wait for socket to connect before emitting
+                            socket.once('connect', () => {
                                 socket.emit("register-active-worker", session?.user?._id);
-                            } else if (socket && !socket.connected) {
-                                // Wait for socket to connect before emitting
-                                socket.once('connect', () => {
-                                    socket.emit("register-active-worker", session?.user?._id);
-                                });
-                            }
-                        } else {
-                            toast.success("You're now unavailable for bookings", { position: 'top-right' })
-                            // Unregister from tracking server when becoming inactive
-                            if (socket && socket.connected && session?.user?._id) {
-                                socket.emit("unregister-active-worker", session?.user?._id);
-                            }
+                                toast.success("You are now available for bookings", { position: 'top-right' })
+                            });
                         }
                     } else {
-                        setIsActive(!newStatus);
-                        toast.error(response?.message || "Something went wrong")
+                        // Unregister from tracking server when becoming inactive
+                        if (socket && socket.connected && session?.user?._id) {
+                            socket.emit("unregister-active-worker", session?.user?._id);
+                            toast.success("You are now unavailable for bookings", { position: 'top-right' })
+                        }
                     }
-                } catch (error) {
-                    console.log("Error updating worker status:", error);
+                } else {
                     setIsActive(!newStatus);
-                    toast.error("Something went wrong");
+                    toast.error(response?.message || "Something went wrong")
                 }
-            }, (error) => {
-                console.log("Geolocation error:", error);
-                setIsActive(!newStatus);
-                toast.error("Unable to get your location. Please enable location access.");
-            })
-        } else {
-            setIsActive(!newStatus);
-            toast.error("Geolocation is not available in your browser");
+            }
+        } catch (error: unknown) {
+            setIsActive(prev => !prev);
+            console.log(error instanceof Error ? error.message : "Internal Server Error on handleAvailabilityToggle");
+            toast.error("Something went wrong", {
+                position: 'top-right',
+            });
+        } finally {
+            setIsActiveLoading(false);
         }
     }
 
@@ -600,11 +612,17 @@ export default function WorkerDashboard() {
                             <span className={`text-sm font-medium ${isActive ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
                                 {isActive ? 'Active' : 'Inactive'}
                             </span>
-                            <Switch
-                                checked={isActive}
-                                onCheckedChange={handleAvailabilityToggle}
-                                disabled={!isProfileCompleted}
-                            />
+                            {
+                                isActiveLoading ? (
+                                    <Spinner className="size-4 inline-block animate-spin" />
+                                ): (
+                                    <Switch
+                                        checked={isActive}
+                                        onCheckedChange={handleAvailabilityToggle}
+                                        disabled={!isProfileCompleted}
+                                    />
+                                )
+                            }
                         </div>
                     </div>
                 </div>
@@ -616,28 +634,28 @@ export default function WorkerDashboard() {
                             {/* </CardHeader> */}
                             <CardContent className="flex md:flex-row flex-col items-center justify-between gap-2">
                                 <div>
-                                <CardTitle>
-                                <p className="text-lg font-semibold">BOOKING FOR {incomingBooking.jobDetails.workNeededProfession.toUpperCase()}</p>
-                                </CardTitle>
-                                <CardDescription>
-                                    <p className="text-sm text-muted-foreground">Details: {incomingBooking.jobDetails.workNeededDescription}</p>
-                                {
-                                    addressLoading ? (
-                                        <p className="text-sm text-muted-foreground animate-pulse">Loading address... <Spinner className="size-4 inline-block" /></p>
-                                    )
-                                    : (
-                                        <p className="text-sm text-muted-foreground">Cutomer Location: {currentAddress ?? "No address found"}</p>
-                                    )
-                                }
-                                <p className="text-sm text-muted-foreground">Distance from you: {getDistanceInMeters(incomingBooking.jobDetails.custLocation.latitude, incomingBooking.jobDetails.custLocation.longitude, latitude, longitude)} Km</p>
-                                </CardDescription>
+                                    <CardTitle>
+                                        <p className="text-lg font-semibold">BOOKING FOR {incomingBooking.jobDetails.workNeededProfession.toUpperCase()}</p>
+                                    </CardTitle>
+                                    <CardDescription>
+                                        <p className="text-sm text-muted-foreground">Details: {incomingBooking.jobDetails.workNeededDescription}</p>
+                                        {
+                                            addressLoading ? (
+                                                <p className="text-sm text-muted-foreground animate-pulse">Loading address... <Spinner className="size-4 inline-block" /></p>
+                                            )
+                                                : (
+                                                    <p className="text-sm text-muted-foreground">Cutomer Location: {currentAddress ?? "No address found"}</p>
+                                                )
+                                        }
+                                        <p className="text-sm text-muted-foreground">Distance from you: {getDistanceInMeters(incomingBooking.jobDetails.custLocation.latitude, incomingBooking.jobDetails.custLocation.longitude, latitude, longitude)} Km</p>
+                                    </CardDescription>
                                 </div>
                                 <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
-                                <Button disabled={isBookingAccepted} className="cursor-pointer text-red-500" variant="outline">Reject</Button>
-                                <Button disabled={isBookingAccepted} className="cursor-pointer text-green-500" variant="outline" onClick={()=>handleAcceptBooking(incomingBooking.bookingId)}>Accept</Button>
-                                <Button disabled={!isBookingAccepted || outForService} className="cursor-pointer text-blue-500" variant="outline" onClick={()=> handleOutForService(incomingBooking.bookingId)}>Out for Service</Button>
-                                <Button disabled={!arrivedNearby} className="cursor-pointer text-green-500" variant="outline" onClick={handleStartWorking}>Arrived</Button>
-                                <Button disabled={workDoneInterval !== 0} className="cursor-pointer text-green-500" variant="outline" onClick={handleWorkDone}>{workDoneInterval !== 0 ? `${workDoneInterval} sec` : "Done"}</Button>
+                                    <Button disabled={isBookingAccepted} className="cursor-pointer text-red-500" variant="outline">Reject</Button>
+                                    <Button disabled={isBookingAccepted} className="cursor-pointer text-green-500" variant="outline" onClick={() => handleAcceptBooking(incomingBooking.bookingId)}>Accept</Button>
+                                    <Button disabled={!isBookingAccepted || outForService} className="cursor-pointer text-blue-500" variant="outline" onClick={() => handleOutForService(incomingBooking.bookingId)}>Out for Service</Button>
+                                    <Button disabled={!arrivedNearby} className="cursor-pointer text-green-500" variant="outline" onClick={handleStartWorking}>Arrived</Button>
+                                    <Button disabled={workDoneInterval !== 0} className="cursor-pointer text-green-500" variant="outline" onClick={handleWorkDone}>{workDoneInterval !== 0 ? `${workDoneInterval} sec` : "Done"}</Button>
                                 </div>
                             </CardContent>
                         </Card>

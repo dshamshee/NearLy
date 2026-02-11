@@ -238,8 +238,8 @@ export default function CustomerDashboard() {
                 </div>
                 <div className={`${mapLoaded ? 'hidden' : 'block'}`}>
                     <div className={`illustration relative md:flex items-center justify-center hidden`}>
-                        <Image src={'/custIllustration2.svg'} alt="Dashboard" width={600} height={600} className="relative z-0" />
-                        <Image src={'/custIllustration1.svg'} alt="Dashboard" width={150} height={150} className="absolute z-20 top-1/7 left-1/5 -translate-x-1/2 -translate-y-1/2" />
+                        <Image src={'/CustIllustration2.svg'} alt="Dashboard" width={600} height={600} className="relative z-0" />
+                        <Image src={'/CustIllustration1.svg'} alt="Dashboard" width={150} height={150} className="absolute z-20 top-1/7 left-1/5 -translate-x-1/2 -translate-y-1/2" />
                     </div>
                 </div>
                 <div className={`mapSection w-full h-full ${mapLoaded ? 'block' : 'hidden'}`}>
