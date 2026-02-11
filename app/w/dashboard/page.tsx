@@ -665,7 +665,7 @@ export default function WorkerDashboard() {
                 }
 
                 <div className={`map ${isBookingAccepted ? 'block' : 'hidden'}`}>
-                    <Map lat={latitude} lng={longitude} custLat={incomingBooking?.jobDetails?.custLocation?.latitude ?? 0} custLng={incomingBooking?.jobDetails?.custLocation?.longitude ?? 0} />
+                    <Map workerLat={latitude ?? 0} workerLng={longitude ?? 0} custLat={incomingBooking?.jobDetails?.custLocation?.latitude ?? 0} custLng={incomingBooking?.jobDetails?.custLocation?.longitude ?? 0} />
                 </div>
 
                 {/* Stats Cards */}

@@ -2,7 +2,7 @@
 import { useEffect, useRef } from "react";
 import { setOptions, importLibrary } from "@googlemaps/js-api-loader";
 
-export const Map = ({lat, lng, custLat, custLng}: {lat: number, lng: number, custLat: number, custLng: number})=>{
+export const Map = ({workerLat, workerLng, custLat, custLng}: {workerLat: number, workerLng: number, custLat: number, custLng: number})=>{
 
     const mapRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<google.maps.Map | null>(null);
@@ -28,9 +28,11 @@ export const Map = ({lat, lng, custLat, custLng}: {lat: number, lng: number, cus
         const { Map } = await importLibrary('maps');
         const { Marker } = await importLibrary('marker') as google.maps.MarkerLibrary;
 
-        // Calculate center point between worker and customer
-        const centerLat = (lat + custLat) / 2;
-        const centerLng = (lng + custLng) / 2;
+        // Calculate center point between worker and customer (use customer if worker is invalid)
+        const hasValidWorker = (workerLat !== 0 || workerLng !== 0);
+        const hasValidCustomer = (custLat !== 0 || custLng !== 0);
+        const centerLat = hasValidWorker && hasValidCustomer ? (workerLat + custLat) / 2 : (hasValidCustomer ? custLat : 20.5937);
+        const centerLng = hasValidWorker && hasValidCustomer ? (workerLng + custLng) / 2 : (hasValidCustomer ? custLng : 78.9629);
 
         // Map Options
         const mapOptions: google.maps.MapOptions = {
@@ -47,7 +49,7 @@ export const Map = ({lat, lng, custLat, custLng}: {lat: number, lng: number, cus
         // Create worker marker
         const workerMarker = new Marker({
             map: map,
-            position: { lat: lat, lng: lng },
+            position: { lat: workerLat, lng: workerLng },
             title: 'Worker Location',
             icon: {
                 path: google.maps.SymbolPath.CIRCLE,
@@ -93,10 +95,12 @@ export const Map = ({lat, lng, custLat, custLng}: {lat: number, lng: number, cus
         });
         directionsRendererRef.current = directionsRenderer;
 
-        // Calculate and display route
-        if (custLat !== 0 && custLng !== 0) {
+        // Calculate and display route - only when both origin and destination are valid
+        const sameLocation = Math.abs(workerLat - custLat) < 0.0001 && Math.abs(workerLng - custLng) < 0.0001;
+
+        if (hasValidCustomer && hasValidWorker && !sameLocation) {
           directionsService.route({
-            origin: { lat: lat, lng: lng },
+            origin: { lat: workerLat, lng: workerLng },
             destination: { lat: custLat, lng: custLng },
             travelMode: google.maps.TravelMode.DRIVING,
           }, (result, status) => {
@@ -105,12 +109,18 @@ export const Map = ({lat, lng, custLat, custLng}: {lat: number, lng: number, cus
               
               // Fit bounds to show both markers and route
               const bounds = new google.maps.LatLngBounds();
-              bounds.extend({ lat: lat, lng: lng });
+              bounds.extend({ lat: workerLat, lng: workerLng });
               bounds.extend({ lat: custLat, lng: custLng });
               map.fitBounds(bounds);
-            } else {
-              console.error('Directions request failed due to ' + status);
+            } else if (status === 'ZERO_RESULTS' && directionsRendererRef.current) {
+              // Clear route when no route found (e.g., same location, unreachable) - just show markers
+              directionsRendererRef.current.setDirections({ routes: [] });
+              const bounds = new google.maps.LatLngBounds();
+              bounds.extend({ lat: workerLat, lng: workerLng });
+              bounds.extend({ lat: custLat, lng: custLng });
+              map.fitBounds(bounds);
             }
+            // Silently skip other statuses (OVER_QUERY_LIMIT, etc.) - no need to spam console
           });
         }
       }
@@ -125,8 +135,8 @@ export const Map = ({lat, lng, custLat, custLng}: {lat: number, lng: number, cus
         if (!isInitializedRef.current || !mapInstanceRef.current || !workerMarkerRef.current || !directionsRendererRef.current || !directionsServiceRef.current) return;
         
         const newWorkerPosition = {
-          lat: lat,
-          lng: lng,
+          lat: workerLat,
+          lng: workerLng,
         };
         
         // Update worker marker position
@@ -135,7 +145,11 @@ export const Map = ({lat, lng, custLat, custLng}: {lat: number, lng: number, cus
         }
         
         // Create or update customer marker if coordinates are valid
-        if (custLat !== 0 && custLng !== 0) {
+        const hasValidWorker = (workerLat !== 0 || workerLng !== 0);
+        const hasValidCustomer = (custLat !== 0 || custLng !== 0);
+        const sameLocation = Math.abs(workerLat - custLat) < 0.0001 && Math.abs(workerLng - custLng) < 0.0001;
+
+        if (hasValidCustomer) {
           const customerPosition = { lat: custLat, lng: custLng };
           
           if (customerMarkerRef.current) {
@@ -160,8 +174,8 @@ export const Map = ({lat, lng, custLat, custLng}: {lat: number, lng: number, cus
             customerMarkerRef.current = customerMarker;
           }
           
-          // Update route
-          if (directionsServiceRef.current) {
+          // Update route - only when both locations are valid and different
+          if (directionsServiceRef.current && hasValidWorker && !sameLocation) {
             directionsServiceRef.current.route({
               origin: newWorkerPosition,
               destination: customerPosition,
@@ -175,10 +189,30 @@ export const Map = ({lat, lng, custLat, custLng}: {lat: number, lng: number, cus
                 bounds.extend(newWorkerPosition);
                 bounds.extend(customerPosition);
                 mapInstanceRef.current?.fitBounds(bounds);
-              } else {
-                console.error('Directions request failed due to ' + status);
+              } else if (status === 'ZERO_RESULTS' && directionsRendererRef.current) {
+                // Clear route when no route found - just show markers
+                directionsRendererRef.current.setDirections({ routes: [] });
+                const bounds = new google.maps.LatLngBounds();
+                bounds.extend(newWorkerPosition);
+                bounds.extend(customerPosition);
+                mapInstanceRef.current?.fitBounds(bounds);
               }
             });
+          } else if (directionsRendererRef.current && (!hasValidWorker || sameLocation)) {
+            // Clear route when worker location is invalid or same as customer
+            directionsRendererRef.current.setDirections({ routes: [] });
+            const map = mapInstanceRef.current;
+            if (map) {
+              if (hasValidWorker) {
+                const bounds = new google.maps.LatLngBounds();
+                bounds.extend(newWorkerPosition);
+                bounds.extend(customerPosition);
+                map.fitBounds(bounds);
+              } else {
+                map.setCenter(customerPosition);
+                map.setZoom(14);
+              }
+            }
           }
         }
       };
@@ -187,7 +221,7 @@ export const Map = ({lat, lng, custLat, custLng}: {lat: number, lng: number, cus
       if (isInitializedRef.current) {
         updateMap();
       }
-    }, [lat, lng, custLat, custLng]);
+    }, [workerLat, workerLng, custLat, custLng]);
 
     return (
         <div className="w-full">

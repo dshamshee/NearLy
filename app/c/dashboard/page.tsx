@@ -29,6 +29,7 @@ export default function CustomerDashboard() {
     const [mapLoaded, setMapLoaded] = useState<boolean>(false);
     const [bookingDetails, setBookingDetails] = useState<zodSearchingType | null>(null);
     const [nearbyWorkers, setNearbyWorkers] = useState<NearbyWorkerType[] | null>(null);
+    const [fetchingNearbyWorkers, setFetchingNearbyWorkers] = useState<boolean>(false);
     const [trackingBookingId, setTrackingBookingId] = useState<string | null>(null);
     const [isBookingsent, setIsBookingsent] = useState<boolean>(false);
 
@@ -37,7 +38,7 @@ export default function CustomerDashboard() {
     const [isWorkerArrived, setIsWorkerArrived] = useState<boolean>(false);
     const [isWorkerOnTheWay, setIsWorkerOnTheWay] = useState<boolean>(false);
     const [isServiceStarted, setIsServiceStarted] = useState<boolean>(false);
-    const [workerCurrentLocation, setWorkerCurrentLocation] = useState<{latitude: number, longitude: number} | null>(null);
+    const [workerCurrentLocation, setWorkerCurrentLocation] = useState<{ latitude: number, longitude: number } | null>(null);
 
     const { data: session } = useSession();
     console.log(nearbyWorkers);
@@ -63,32 +64,32 @@ export default function CustomerDashboard() {
             setIsBookingsent(false);
         };
 
-        const handleWorkerStartedNavigation = ()=>{
+        const handleWorkerStartedNavigation = () => {
             setIsWorkerOnTheWay(true);
             toast.success("Worker is on the way", {
                 position: 'top-right',
             });
         }
 
-        const handleStartNavigationError = (error: { message: string })=>{
+        const handleStartNavigationError = (error: { message: string }) => {
             toast.error(error.message || "Something went wrong", {
                 position: 'top-right',
             });
             setIsWorkerOnTheWay(false);
         }
 
-        const handleLocationBroadcast = (location: {latitude: number, longitude: number})=>{
+        const handleLocationBroadcast = (location: { latitude: number, longitude: number }) => {
             setWorkerCurrentLocation(location);
         }
 
-        const handleUpdateLocationError = (error: { message: string })=>{
+        const handleUpdateLocationError = (error: { message: string }) => {
             toast.error(error.message || "Something went wrong", {
                 position: 'top-right',
             });
             setWorkerCurrentLocation(null);
         }
 
-        const handleWorkerArrived = ()=>{
+        const handleWorkerArrived = () => {
             setIsWorkerArrived(true);
             setIsServiceStarted(true);
             toast.success("Service has started", {
@@ -96,7 +97,7 @@ export default function CustomerDashboard() {
             });
         }
 
-        const handleConfirmReachedError = (error: { message: string })=>{
+        const handleConfirmReachedError = (error: { message: string }) => {
             toast.error(error.message || "Something went wrong", {
                 position: 'top-right',
             });
@@ -137,6 +138,7 @@ export default function CustomerDashboard() {
         return () => clearTimeout(timeoutId);
     }, [socket, isConnected, trackingBookingId, isBookingAccepted]);
 
+    // Function to calculate the distance between two coordinates in meters
     const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
         const R = 6371e3; // Earth radius in meters
         const dLat = (lat2 - lat1) * (Math.PI / 180);
@@ -172,6 +174,7 @@ export default function CustomerDashboard() {
             }
 
             try {
+                setFetchingNearbyWorkers(true);
                 const workers = await findNearbyWorkers(bookingDetails.custLocation.latitude, bookingDetails.custLocation.longitude, bookingDetails.workNeededProfession);
                 console.log("workers", workers);
                 if (workers && workers.length > 0) {
@@ -185,6 +188,8 @@ export default function CustomerDashboard() {
             } catch (error) {
                 console.error("Error fetching nearby workers:", error);
                 toast.error("Something went wrong", { duration: 3000, position: 'top-center' })
+            } finally {
+                setFetchingNearbyWorkers(false);
             }
         }
 
@@ -243,7 +248,7 @@ export default function CustomerDashboard() {
                     </div>
                 </div>
                 <div className={`mapSection w-full h-full ${mapLoaded ? 'block' : 'hidden'}`}>
-                    <Map lat={22.3033} lng={73.2002} custLat={bookingDetails?.custLocation.latitude ?? 0} custLng={bookingDetails?.custLocation.longitude ?? 0} />
+                    <Map workerLat={workerCurrentLocation?.latitude ?? 0} workerLng={workerCurrentLocation?.longitude ?? 0} custLat={bookingDetails?.custLocation.latitude ?? 0} custLng={bookingDetails?.custLocation.longitude ?? 0} />
                 </div>
 
             </div>
@@ -279,14 +284,18 @@ export default function CustomerDashboard() {
                     <h1 className="text-xl font-semibold">Wait for the worker to accept the booking</h1>
                     <Spinner className="size-6" data-icon="inline-start" />
                 </div>
-            ) : isBookingAccepted ? (
+            ) : isBookingAccepted && !isWorkerOnTheWay ? (
                 <div className="flex flex-col items-center justify-center gap-4 py-8">
                     <h1 className="text-xl font-semibold text-green-600">Booking confirmed! Worker has accepted your request.</h1>
+                </div>
+            ) : isWorkerOnTheWay && !isWorkerArrived ? (
+                <div className="flex flex-col items-center justify-center gap-4 py-8">
+                    <h1 className="text-xl font-semibold text-green-600">Worker is on the way, please wait for them to arrive.</h1>
                 </div>
             ) : null
             }
 
-            {!nearbyWorkers && (
+            {!nearbyWorkers && !fetchingNearbyWorkers && (
                 <div className="recentProfessionals mt-10">
                     <h2 className="md:text-2xl text-xl font-bold text-foreground mb-2">Recent Professionals</h2>
                     <div className="recentProfessionalsList grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -296,15 +305,16 @@ export default function CustomerDashboard() {
                     </div>
                 </div>
             )
-
             }
 
-
-
-
-
+            {
+                fetchingNearbyWorkers && (
+                    <div className="flex flex-col items-center justify-center gap-4 py-8">
+                        <Spinner className="size-6" data-icon="inline-start" />
+                        <h1 className="text-xl font-semibold text-green-600">Fetching nearby workers...</h1>
+                    </div>
+                )
+            }
         </div>
     )
 }
-
-{/*  */ }
