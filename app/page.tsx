@@ -115,14 +115,14 @@ export default function Home() {
 
 const services = [
   {
-    service: "Plumbing",
+    service: "Electrician",
     // description: "We offer a wide range of plumbing services to meet your needs. From simple repairs to complex installations, we have you covered.",
     image: "/electrician.jpg"
   },
   {
-    service: "Electrical",
+    service: "Plumber",
     // description: "We offer a wide range of electrical services to meet your needs. From simple repairs to complex installations, we have you covered.",
-    image: "/plumber.jpg"
+    image: "/Plumber.jpg"
   },
   {
     service: "Carpentry",
