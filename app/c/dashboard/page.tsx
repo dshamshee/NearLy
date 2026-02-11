@@ -160,7 +160,7 @@ export default function CustomerDashboard() {
 
 
 
-    // Fin
+    // Find nearby workers
     useEffect(() => {
         const getNearbyWorkers = async () => {
             if (!bookingDetails || !mapLoaded) return;

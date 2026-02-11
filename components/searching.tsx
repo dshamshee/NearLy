@@ -32,7 +32,7 @@ export const Searching = ({
   const [currentLocation, setCurrentLocation] = useState<{
     latitude: number | undefined;
     longitude: number | undefined;
-  }>({ latitude: 22.3040, longitude: 73.2027 }); // set undefined in production
+  }>({ latitude: undefined, longitude: undefined }); // set undefined in production
   const [locationLoading, setLocationLoading] = useState<boolean>(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [currentAddress, setCurrentAddress] = useState<string | null>(null);
@@ -134,7 +134,7 @@ export const Searching = ({
     } else {
       // setCurrentLocation({latitude: 22.3040, longitude: 73.2027})
       const defaultLocation = {latitude: 22.3040, longitude: 73.2027};
-      form.setValue("custLocation", defaultLocation); // Remove in production
+      // form.setValue("custLocation", defaultLocation); // Remove in production
       setLocationLoading(false);
       const errorMsg = "Geolocation is not supported by your browser. Please use a modern browser or enable location services.";
       setLocationError(errorMsg);
