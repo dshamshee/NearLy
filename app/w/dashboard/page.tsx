@@ -649,7 +649,7 @@ export default function WorkerDashboard() {
                                                     <p className="text-sm text-muted-foreground">Cutomer Location: {currentAddress ?? "No address found"}</p>
                                                 )
                                         }
-                                        <p className="text-sm text-muted-foreground">Distance from you: {getDistanceInMeters(incomingBooking.jobDetails.custLocation.latitude, incomingBooking.jobDetails.custLocation.longitude, latitude, longitude)} Km</p>
+                                        <p className="text-sm text-muted-foreground">Distance from you: {(getDistanceInMeters(incomingBooking.jobDetails.custLocation.latitude, incomingBooking.jobDetails.custLocation.longitude, latitude, longitude) / 1000).toFixed(2)} Km</p>
                                     </CardDescription>
                                 </div>
                                 <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
