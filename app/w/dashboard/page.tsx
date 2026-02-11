@@ -36,8 +36,8 @@ export default function WorkerDashboard() {
     const [outForService, setOutForService] = useState<boolean>(false);
     const [arrivedAtDestination, setArrivedAtDestination] = useState<boolean>(false);
     const [arrivedNearby, setArrivedNearby] = useState<boolean>(false);
-    const [latitude, setLatitude] = useState<number>(25.5941);
-    const [longitude, setLongitude] = useState<number>(85.1376);
+    const [latitude, setLatitude] = useState<number | null>(null);
+    const [longitude, setLongitude] = useState<number | null>(null);
     const [isProfileCompleted, setIsProfileCompleted] = useState<boolean>(false);
     const [workDoneInterval, setWorkDoneInterval] = useState<number>(5);
 
@@ -526,7 +526,9 @@ export default function WorkerDashboard() {
         const newStatus = !isActive;
         try {
             if (latitude && longitude) {
+                console.log("latitude", latitude, "longitude", longitude);
                 const response =  await updateWorkerStatus(newStatus, latitude, longitude);
+
                 
                 if (response.success) {
                     setIsActive(newStatus);
