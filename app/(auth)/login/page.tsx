@@ -94,6 +94,8 @@ export default function LoginPage() {
 
   const onSubmit = async (data: zodLoginType) => {
     try {
+      router.prefetch('/c/dashboard');
+      router.prefetch('/w/dashboard');
     setIsSubmitting(true);
       const result = await signIn("credentials", {
         email: data.email,
@@ -104,9 +106,9 @@ export default function LoginPage() {
 
       if(result?.ok){
         toast.success("Login Successful");
-        if(data.identifier === "CUSTOMER") router.push("/c/dashboard")
-          else if(data.identifier === "WORKER") router.push("/w/dashboard");
-        else router.push("/");
+        if(data.identifier === "CUSTOMER") router.replace("/c/dashboard")
+          else if(data.identifier === "WORKER") router.replace("/w/dashboard");
+        else router.replace("/");
         // router.push("/");
       } else toast.error(result?.error || "Login Failed");
       

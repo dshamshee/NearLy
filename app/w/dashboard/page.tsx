@@ -39,6 +39,7 @@ export default function WorkerDashboard() {
     const [latitude, setLatitude] = useState<number>(0);
     const [longitude, setLongitude] = useState<number>(0);
     const [isProfileCompleted, setIsProfileCompleted] = useState<boolean>(false);
+    const [checkingProfileStatus, setCheckingProfileStatus] = useState<boolean>(false);
     const [workDoneInterval, setWorkDoneInterval] = useState<number>(5);
 
     const [locationLoading, setLocationLoading] = useState<boolean>(false);
@@ -56,8 +57,10 @@ export default function WorkerDashboard() {
     // Get worker profile status to check if their profile is completed or not
     useEffect(() => {
         const getWorkerDetails = async () => {
+            setCheckingProfileStatus(true);
             const response = await getWorkerProfileStatus();
             setIsProfileCompleted(response.data!)
+            setCheckingProfileStatus(false);
         }
         getWorkerDetails();
 
@@ -583,21 +586,21 @@ export default function WorkerDashboard() {
 
                 {/* Profile Completion Alert */}
                 {
-                    !isProfileCompleted && (
-                        <Alert className="max-w-5xl md:ml-[10%]" variant={"destructive"}>
-                            <AlertTriangleIcon />
-                            <AlertTitle>Your profile isn&apos;t completed</AlertTitle>
-                            <AlertDescription className="hidden md:block">
-                                Please complete your profile to start your journey and earn money.
-                            </AlertDescription>
-                            <AlertAction>
-                                <Button variant="outline">
-                                    <Link href={"/w/profile/edit"}>
-                                        Complete Profile
-                                    </Link>
-                                </Button>
-                            </AlertAction>
-                        </Alert>
+                    checkingProfileStatus ? (
+                        <div className="flex items-center justify-center">
+                            <Spinner className="size-4 inline-block animate-spin" />
+                            <p className="text-sm text-muted-foreground">Checking your profile status...</p>
+                        </div>
+                    ): (
+                        !isProfileCompleted && (
+                            <Alert className="max-w-5xl md:ml-[10%]" variant={"destructive"}>
+                                <AlertTriangleIcon />
+                                <AlertTitle>Your profile isn&apos;t completed</AlertTitle>
+                                <AlertDescription className="hidden md:block">
+                                    Please complete your profile to start your journey and earn money.
+                                </AlertDescription>
+                            </Alert>
+                        )
                     )
                 }
 
