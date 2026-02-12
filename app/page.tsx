@@ -1,14 +1,12 @@
-// import { DummyContent } from "@/components/navbar";
-import { Map } from "@/components/map";
-import { ScrollingButton } from "@/components/scrollingButton";
-import { Searching } from "@/components/searching";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards";
 import Image from "next/image";
-import { Footer } from "@/components/footer";
+
+
 
 export default function Home() {
+
   return (
     <div className="relative w-full bg-background font-serif">
       <div className="flex flex-col items-center mt-20 justify-center">

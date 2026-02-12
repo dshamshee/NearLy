@@ -10,7 +10,7 @@ import {
   MobileNavToggle,
   MobileNavMenu,
 } from "@/components/ui/resizable-navbar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { Moon, Sun, UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -52,6 +52,9 @@ export function NavigationBar() {
     },
   ];
 
+  useEffect(()=> {
+    router.prefetch('/login');
+  }, [])
 
   const handleLogout = async ()=>{
     await signOut({ callbackUrl: "/" });
@@ -182,7 +185,7 @@ export function NavigationBar() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button variant="secondary" onClick={() => router.push("/login")}>
+              <Button className="cursor-pointer" variant="secondary" onClick={() => router.push("/login")}>
                 Login
               </Button>
             )}
@@ -233,7 +236,7 @@ export function NavigationBar() {
                 </Link>
               </div>
             ) : (
-              <div className="flex w-full flex-col gap-4">
+              <div className="flex w-full cursor-pointer flex-col gap-4">
                 <Link href={'/login'} onClick={() => setIsMobileMenuOpen(false)} className="relative text-neutral-600 dark:text-neutral-300">Login</Link>
               </div>
             )
