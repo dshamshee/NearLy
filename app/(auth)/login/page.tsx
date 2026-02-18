@@ -15,7 +15,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { FcGoogle } from "react-icons/fc";
 import { signInWithRole } from "@/utils/authHelpers";
@@ -28,6 +28,7 @@ export default function LoginPage() {
   // console.log("session in login page", session);
 
   const router = useRouter();
+  const { update: updateSession } = useSession();
 
   const [role, setRole] = useState<"CUSTOMER" | "WORKER">("CUSTOMER");
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -99,18 +100,22 @@ export default function LoginPage() {
     try {
 
     setIsSubmitting(true);
+      const callbackUrl = data.identifier === "CUSTOMER" ? "/c/dashboard" : data.identifier === "WORKER" ? "/w/dashboard" : "/";
       const result = await signIn("credentials", {
         email: data.email,
         password: data.password,
         identifier: data.identifier,
-        redirect: false, // Prevent automatic redirect on error
+        redirect: false,
+        callbackUrl,
       });
 
       if(result?.ok){
         toast.success("Login Successful");
-        if(data.identifier === "CUSTOMER") router.push("/c/dashboard")
-          else if(data.identifier === "WORKER") router.push("/w/dashboard");
-        else router.push("/");
+        // Force session refetch so client state is ready before navigation
+        await updateSession();
+        router.refresh();
+        const path = (result as { url?: string }).url ?? callbackUrl;
+        router.push(path);
       } else toast.error(result?.error || "Login Failed");
       
     } catch (error) {
