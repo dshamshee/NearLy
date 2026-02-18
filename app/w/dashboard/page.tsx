@@ -599,6 +599,13 @@ export default function WorkerDashboard() {
                                 <AlertDescription className="hidden md:block">
                                     Please complete your profile to start your journey and earn money.
                                 </AlertDescription>
+                                <AlertAction >
+                                    <Link href={`/w/profile/edit`}>
+                                        <Button variant="outline" className="cursor-pointer">
+                                            Edit Profile
+                                        </Button>
+                                    </Link> 
+                                </AlertAction>
                             </Alert>
                         )
                     )

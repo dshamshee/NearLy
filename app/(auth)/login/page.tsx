@@ -28,6 +28,8 @@ export default function LoginPage() {
   // console.log("session in login page", session);
 
   const router = useRouter();
+  router.prefetch('/c/dashboard');
+  router.prefetch('/w/dashboard');
   const [role, setRole] = useState<"CUSTOMER" | "WORKER">("CUSTOMER");
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -94,8 +96,7 @@ export default function LoginPage() {
 
   const onSubmit = async (data: zodLoginType) => {
     try {
-      router.prefetch('/c/dashboard');
-      router.prefetch('/w/dashboard');
+
     setIsSubmitting(true);
       const result = await signIn("credentials", {
         email: data.email,
