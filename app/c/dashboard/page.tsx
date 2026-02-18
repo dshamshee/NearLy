@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner"
 import { useSocket } from "@/utils/socketContext";
+import { useSearchParams } from "next/navigation";
 
 
 export interface NearbyWorkerType extends Omit<Worker, 'userId'> {
@@ -41,8 +42,18 @@ export default function CustomerDashboard() {
     const [workerCurrentLocation, setWorkerCurrentLocation] = useState<{ latitude: number, longitude: number } | null>(null);
 
     const { data: session } = useSession();
-    console.log(nearbyWorkers);
+    const searchParams = useSearchParams();
     const { socket, isConnected } = useSocket();
+
+    // Show login success toast when redirected from login
+    useEffect(() => {
+      if (searchParams.get("login") === "success" && typeof window !== "undefined") {
+        toast.success("Login Successful");
+        const url = new URL(window.location.href);
+        url.searchParams.delete("login");
+        window.history.replaceState({}, "", url.pathname + (url.search || ""));
+      }
+    }, [searchParams]);
 
     // Listen for booking confirmation from worker
     useEffect(() => {

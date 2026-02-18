@@ -15,7 +15,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { signIn, useSession } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import { toast } from "sonner";
 import { FcGoogle } from "react-icons/fc";
 import { signInWithRole } from "@/utils/authHelpers";
@@ -28,7 +28,6 @@ export default function LoginPage() {
   // console.log("session in login page", session);
 
   const router = useRouter();
-  const { update: updateSession } = useSession();
 
   const [role, setRole] = useState<"CUSTOMER" | "WORKER">("CUSTOMER");
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -98,29 +97,25 @@ export default function LoginPage() {
 
   const onSubmit = async (data: zodLoginType) => {
     try {
-
-    setIsSubmitting(true);
-      const callbackUrl = data.identifier === "CUSTOMER" ? "/c/dashboard" : data.identifier === "WORKER" ? "/w/dashboard" : "/";
+      setIsSubmitting(true);
+      const basePath = data.identifier === "CUSTOMER" ? "/c/dashboard" : data.identifier === "WORKER" ? "/w/dashboard" : "/";
+      const callbackUrl = basePath === "/" ? "/" : `${basePath}?login=success`;
+      // Use redirect: true - NextAuth performs a full redirect on success (works in production)
+      // Errors redirect to /login?error=... and are handled in useEffect
       const result = await signIn("credentials", {
         email: data.email,
         password: data.password,
         identifier: data.identifier,
-        redirect: false,
+        redirect: true,
         callbackUrl,
       });
-
-      if(result?.ok){
-        toast.success("Login Successful");
-        // Force session refetch so client state is ready before navigation
-        await updateSession();
-        router.refresh();
-        const path = (result as { url?: string }).url ?? callbackUrl;
-        router.push(path);
-      } else toast.error(result?.error || "Login Failed");
-      
+      // Only reached on error when redirect: true
+      if (result?.error) {
+        toast.error(result.error || "Login Failed");
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Something went wrong");
-    } finally{
+    } finally {
       setIsSubmitting(false);
     }
   };

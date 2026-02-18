@@ -1,5 +1,6 @@
 'use client';
 
+import { useSearchParams } from "next/navigation";
 import { updateWorkerStatus } from "@/actions/updateWorkerStatus";
 import { Switch } from "@/components/ui/switch";
 import { Calendar, Clock, DollarSign, Briefcase, User, CheckCircle2, XCircle, Clock3 } from "lucide-react";
@@ -27,7 +28,18 @@ import { zodIncomingBookingType } from "@/zod/incommingBooking";
 
 export default function WorkerDashboard() {
     const { data: session } = useSession();
+    const searchParams = useSearchParams();
     const { socket, isConnected } = useSocket();
+
+    // Show login success toast when redirected from login
+    useEffect(() => {
+      if (searchParams.get("login") === "success" && typeof window !== "undefined") {
+        toast.success("Login Successful");
+        const url = new URL(window.location.href);
+        url.searchParams.delete("login");
+        window.history.replaceState({}, "", url.pathname + (url.search || ""));
+      }
+    }, [searchParams]);
 
     const [isActive, setIsActive] = useState<boolean>(false);
     const [isActiveLoading, setIsActiveLoading] = useState<boolean>(false);
