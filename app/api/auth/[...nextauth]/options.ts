@@ -160,15 +160,24 @@ export const authOptions: NextAuthOptions = {
             token.role = account.role as "CUSTOMER" | "WORKER" | "ADMIN";
         }
         // For credentials provider: store full user in token to avoid DB lookup on every request
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if (user && account?.provider === "credentials") {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const u = user as any;
-            token._id = u._id?.toString?.() ?? u._id;
+            const u = user as { _id?: { toString(): string } | string; role?: string; email?: string; name?: string; avatar?: string; image?: string };
+            token._id = typeof u._id === "string" ? u._id : u._id?.toString?.();
             token.role = u.role as "CUSTOMER" | "WORKER" | "ADMIN";
             token.email = u.email;
             token.name = u.name;
             token.avatar = u.avatar ?? u.image ?? "";
+        }
+        // For OAuth: one-time DB lookup to get role (proxy uses token.role, no session lookup)
+        if (user && account?.provider !== "credentials" && user.email) {
+            await dbConnect();
+            const dbUser = await UserModel.findOne({ email: user.email });
+            if (dbUser) {
+                token._id = dbUser._id.toString();
+                token.role = dbUser.role as "CUSTOMER" | "WORKER" | "ADMIN";
+                token.name = dbUser.name;
+                token.avatar = dbUser.avatar ?? "";
+            }
         }
         if (user) {
             token.email = token.email ?? user.email;

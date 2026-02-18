@@ -108,7 +108,6 @@ export default function LoginPage() {
 
       if(result?.ok){
         toast.success("Login Successful");
-        router.refresh(); // Update router state before navigation
         if(data.identifier === "CUSTOMER") router.push("/c/dashboard")
           else if(data.identifier === "WORKER") router.push("/w/dashboard");
         else router.push("/");
