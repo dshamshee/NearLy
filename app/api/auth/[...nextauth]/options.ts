@@ -3,6 +3,7 @@ import { JWT } from "next-auth/jwt";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { cookies } from "next/headers";
+import mongoose from "mongoose";
 import dbConnect from "@/utils/dbConnection";
 import bcrypt from "bcryptjs";
 import UserModel from "@/models/user";
@@ -156,27 +157,38 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, account, user }) {
         // Store role in token if available from account (set in signIn callback)
         if (account?.role) {
-            token.role = account.role;
+            token.role = account.role as "CUSTOMER" | "WORKER" | "ADMIN";
         }
-        // For credentials provider, get role from user object (from authorize function)
+        // For credentials provider: store full user in token to avoid DB lookup on every request
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (user && account?.provider === "credentials" && (user as any).role) {
+        if (user && account?.provider === "credentials") {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            token.role = (user as any).role;
+            const u = user as any;
+            token._id = u._id?.toString?.() ?? u._id;
+            token.role = u.role as "CUSTOMER" | "WORKER" | "ADMIN";
+            token.email = u.email;
+            token.name = u.name;
+            token.avatar = u.avatar ?? u.image ?? "";
         }
         if (user) {
-            token.email = user.email;
+            token.email = token.email ?? user.email;
         }
         return token;
     },
 
     async session({ session, token }: { session: Session; token: JWT }) {
-
-        if(token?.email){
-            const loggedInUser = await UserModel.findOne({email: token?.email});
-            if(!loggedInUser) throw new Error("User not found");
-
-            if(loggedInUser && session.user){
+        // Read from token (set in jwt callback) - no DB lookup on every request
+        if (token?.email && session.user) {
+            if (token._id && token.role) {
+                session.user._id = new mongoose.Types.ObjectId(token._id);
+                session.user.role = token.role;
+                session.user.email = token.email;
+                session.user.name = token.name ?? "";
+                session.user.avatar = token.avatar ?? "";
+            } else {
+                // Fallback for OAuth tokens that don't have user data in JWT yet
+                const loggedInUser = await UserModel.findOne({ email: token.email });
+                if (!loggedInUser) throw new Error("User not found");
                 session.user._id = loggedInUser._id;
                 session.user.role = loggedInUser.role;
                 session.user.email = loggedInUser.email;
@@ -184,7 +196,6 @@ export const authOptions: NextAuthOptions = {
                 session.user.avatar = loggedInUser.avatar || "";
             }
         }
-
         return Promise.resolve(session);
       },
   },
