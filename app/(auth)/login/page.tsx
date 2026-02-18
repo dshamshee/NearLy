@@ -108,10 +108,12 @@ export default function LoginPage() {
 
       if(result?.ok){
         toast.success("Login Successful");
+        // router.refresh() ensures session/router state is updated before navigation
+        // Required for redirect to work correctly in production (Next.js App Router)
+        router.refresh();
         if(data.identifier === "CUSTOMER") router.push("/c/dashboard")
           else if(data.identifier === "WORKER") router.push("/w/dashboard");
         else router.push("/");
-        // router.push("/");
       } else toast.error(result?.error || "Login Failed");
       
     } catch (error) {
