@@ -28,14 +28,15 @@ export default function LoginPage() {
   // console.log("session in login page", session);
 
   const router = useRouter();
-  router.prefetch('/c/dashboard');
-  router.prefetch('/w/dashboard');
+
   const [role, setRole] = useState<"CUSTOMER" | "WORKER">("CUSTOMER");
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // Check for error in URL parameters after OAuth redirect completes
   useEffect(() => {
+    router.prefetch('/c/dashboard');
+    router.prefetch('/w/dashboard');
     // Wait for component to be fully mounted and Toaster to be ready
     const timeoutId = setTimeout(() => {
       if (typeof window === "undefined") return;
