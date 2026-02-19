@@ -41,6 +41,7 @@ export default function WorkerDashboard() {
       }
     }, [searchParams]);
 
+    const [isMapLoaded, setIsMapLoaded] = useState<boolean>(false);
     const [isActive, setIsActive] = useState<boolean>(false);
     const [isActiveLoading, setIsActiveLoading] = useState<boolean>(false);
     const [incomingBooking, setIncomingBooking] = useState<zodIncomingBookingType | null>(null)
@@ -154,6 +155,7 @@ export default function WorkerDashboard() {
 
         const handleIncomingRequest = async (data: zodIncomingBookingType) => {
             setIncomingBooking(data);
+            // setIsBookingRejected(false)
             // Reset arrivedNearby when receiving a new booking
             setArrivedNearby(false);
             setArrivedAtDestination(false);
@@ -186,6 +188,7 @@ export default function WorkerDashboard() {
                 position: 'top-right',
             });
             setIsBookingAccepted(true);
+            setIsMapLoaded(true);
             // Reset arrivedNearby when accepting a new booking
             setArrivedNearby(false);
             // Clear and reset work done interval
@@ -201,6 +204,31 @@ export default function WorkerDashboard() {
                 position: 'top-right',
             });
             setIsBookingAccepted(false);
+            setIsMapLoaded(false);
+        }
+    }
+
+    // Function to reject the booking
+    const handleRejectBooking = (bookingId: string) =>{
+        try {
+            if (!socket || !isConnected) return;
+            socket.emit("reject-booking", { bookingId });
+            toast.success("Booking rejected successfully", {
+                position: 'top-right',
+            });
+            setIsBookingAccepted(false);
+            setIsMapLoaded(false);
+            setIncomingBooking(null);
+        } catch (error: unknown) {
+            console.log(error instanceof Error ? error.message : "Internal Server Error on reject-booking");
+            toast.error("Something went wrong", {
+                position: 'top-right',
+            });
+            setIsBookingAccepted(false);
+            setIsMapLoaded(false);
+            
+            setIsBookingAccepted(false);
+            setIsMapLoaded(false);
         }
     }
 
@@ -346,6 +374,7 @@ export default function WorkerDashboard() {
 
         setArrivedAtDestination(true);
         setArrivedNearby(false);
+        
 
         // Set initial countdown value (5 seconds)
         setWorkDoneInterval(5);
@@ -380,12 +409,14 @@ export default function WorkerDashboard() {
             toast.success("You have arrived at the location", {
                 position: 'top-right',
             });
+            setIsMapLoaded(false);
         } catch (error: unknown) {
             console.log(error instanceof Error ? error.message : "Internal Server Error on handleStartWorking");
             toast.error("Something went wrong", {
                 position: 'top-right',
             });
 
+            setIsMapLoaded(true);
             setWorkDoneInterval(0);
         }
     }
@@ -663,6 +694,7 @@ export default function WorkerDashboard() {
                                     </CardTitle>
                                     <CardDescription>
                                         <p className="text-sm text-muted-foreground">Details: {incomingBooking.jobDetails.workNeededDescription}</p>
+                                        <p className="text-sm text-muted-foreground">Price Range: ₹{incomingBooking.jobDetails.priceRange}</p>
                                         {
                                             addressLoading ? (
                                                 <p className="text-sm text-muted-foreground animate-pulse">Loading address... <Spinner className="size-4 inline-block" /></p>
@@ -675,7 +707,7 @@ export default function WorkerDashboard() {
                                     </CardDescription>
                                 </div>
                                 <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
-                                    <Button disabled={isBookingAccepted} className="cursor-pointer text-red-500" variant="outline">Reject</Button>
+                                    <Button disabled={isBookingAccepted} className="cursor-pointer text-red-500" variant="outline" onClick={() => handleRejectBooking(incomingBooking.bookingId)}>Reject</Button>
                                     <Button disabled={isBookingAccepted} className="cursor-pointer text-green-500" variant="outline" onClick={() => handleAcceptBooking(incomingBooking.bookingId)}>Accept</Button>
                                     <Button disabled={!isBookingAccepted || outForService} className="cursor-pointer text-blue-500" variant="outline" onClick={() => handleOutForService(incomingBooking.bookingId)}>Out for Service</Button>
                                     <Button disabled={!arrivedNearby} className="cursor-pointer text-green-500" variant="outline" onClick={handleStartWorking}>Arrived</Button>
@@ -686,9 +718,13 @@ export default function WorkerDashboard() {
                     )
                 }
 
-                <div className={`map ${isBookingAccepted ? 'block' : 'hidden'}`}>
+                {
+                    isMapLoaded && (
+                        <div className={`map `}>
                     <Map workerLat={latitude ?? 0} workerLng={longitude ?? 0} custLat={incomingBooking?.jobDetails?.custLocation?.latitude ?? 0} custLng={incomingBooking?.jobDetails?.custLocation?.longitude ?? 0} />
                 </div>
+                    )
+                }
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

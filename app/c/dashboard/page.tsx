@@ -36,6 +36,7 @@ export default function CustomerDashboard() {
 
 
     const [isBookingAccepted, setIsBookingAccepted] = useState<boolean>(false);
+    const [isBookingRejected, setIsBookingRejected] = useState<boolean>(false);
     const [isWorkerArrived, setIsWorkerArrived] = useState<boolean>(false);
     const [isWorkerOnTheWay, setIsWorkerOnTheWay] = useState<boolean>(false);
     const [isServiceStarted, setIsServiceStarted] = useState<boolean>(false);
@@ -47,12 +48,12 @@ export default function CustomerDashboard() {
 
     // Show login success toast when redirected from login
     useEffect(() => {
-      if (searchParams.get("login") === "success" && typeof window !== "undefined") {
-        toast.success("Login Successful");
-        const url = new URL(window.location.href);
-        url.searchParams.delete("login");
-        window.history.replaceState({}, "", url.pathname + (url.search || ""));
-      }
+        if (searchParams.get("login") === "success" && typeof window !== "undefined") {
+            toast.success("Login Successful");
+            const url = new URL(window.location.href);
+            url.searchParams.delete("login");
+            window.history.replaceState({}, "", url.pathname + (url.search || ""));
+        }
     }, [searchParams]);
 
     // Listen for booking confirmation from worker
@@ -67,13 +68,35 @@ export default function CustomerDashboard() {
             });
         };
 
-        const handleBookingError = (error: { message: string }) => {
-            console.error("Booking error:", error);
-            toast.error(error.message || "Booking request failed", {
+        const handleBookingError = (error: unknown) => {
+            const message = (typeof error === "object" && error !== null && "message" in error && typeof (error as { message: unknown }).message === "string")
+                ? (error as { message: string }).message
+                : "Booking request failed";
+            console.error("Booking error:", message, error);
+            toast.error(message, {
                 position: 'top-right',
             });
-            setIsBookingsent(false);
+
+            setTimeout(()=>{setIsBookingsent(false);}, 2000)
+
         };
+
+        const handleBookingRejected = (data: { msg: string }) => {
+            toast.error(data.msg || "Booking rejected by worker", {
+                position: 'top-right',
+            });
+            setIsBookingAccepted(false);
+            setIsBookingRejected(true);
+            setTimeout(()=>{setIsBookingsent(false);}, 3000)
+        }
+
+        const handleBookingRejectedError = (error: { message: string }) => {
+            toast.error(error.message || "Something went wrong", {
+                position: 'top-right',
+            });
+            setIsBookingAccepted(false);
+            setIsBookingRejected(false);
+        }
 
         const handleWorkerStartedNavigation = () => {
             setIsWorkerOnTheWay(true);
@@ -103,6 +126,7 @@ export default function CustomerDashboard() {
         const handleWorkerArrived = () => {
             setIsWorkerArrived(true);
             setIsServiceStarted(true);
+            setMapLoaded(false);
             toast.success("Service has started", {
                 position: 'top-right',
             });
@@ -114,10 +138,13 @@ export default function CustomerDashboard() {
             });
             setIsWorkerArrived(false);
             setIsServiceStarted(false);
+            setMapLoaded(true);
         }
 
         socket.on("booking-confirmed", handleBookingConfirmed);
         socket.on("booking-request-error", handleBookingError);
+        socket.on("booking-rejected", handleBookingRejected);
+        socket.on("booking-rejected-error", handleBookingRejectedError);
         socket.on("worker-started-navigation", handleWorkerStartedNavigation);
         socket.on('location-broadcast', handleLocationBroadcast);
         socket.on("worker-arrived", handleWorkerArrived);
@@ -128,6 +155,8 @@ export default function CustomerDashboard() {
         return () => {
             socket.off("booking-confirmed", handleBookingConfirmed);
             socket.off("booking-request-error", handleBookingError);
+            socket.off("booking-rejected", handleBookingRejected);
+            socket.off("booking-rejected-error", handleBookingRejectedError);
             socket.off("worker-started-navigation", handleWorkerStartedNavigation);
             socket.off('location-broadcast', handleLocationBroadcast);
             socket.off("worker-arrived", handleWorkerArrived);
@@ -223,15 +252,22 @@ export default function CustomerDashboard() {
         const bookingId = `${session?.user?._id}-${workerId}`;
         setTrackingBookingId(bookingId);
 
+        setIsBookingsent(true);
+        setIsBookingRejected(false);
         socket.emit("send-booking-request", {
             bookingId: bookingId,
             selectedWorkerId: workerId,
             jobDetails: bookingDetails
+        }, (response: { success?: boolean; error?: string } | undefined) => {
+            if (response?.error) {
+                toast.error(response.error, { position: 'top-right' });
+                setIsBookingsent(false);
+            } else {
+                toast.success("Booking request sent successfully", { position: 'top-right' });
+            }
         });
 
         console.log("Booking request sent:", { bookingId, selectedWorkerId: workerId });
-        setIsBookingsent(true);
-        toast.success("Booking request sent successfully");
     }
 
 
@@ -285,10 +321,14 @@ export default function CustomerDashboard() {
                                 ratings={worker.averageRating ?? 0.0}
                                 serviceCharge={worker.serviceCharge ?? 0}
                                 sendBookingRequest={sendBookingRequest}
-                                workerId={worker.userId._id}
+                                workerId={String(worker.userId._id)}
 
                             />)
                     })}
+                </div>
+            ) : isBookingRejected ? (
+                <div className="flex flex-col items-center justify-center gap-4 py-8">
+                    <h1 className="text-xl font-semibold text-red-600">Booking rejected by worker, please increase the price range and try again</h1>
                 </div>
             ) : isBookingsent && !isBookingAccepted ? (
                 <div className="flex flex-col items-center justify-center gap-4 py-8">
@@ -302,6 +342,10 @@ export default function CustomerDashboard() {
             ) : isWorkerOnTheWay && !isWorkerArrived ? (
                 <div className="flex flex-col items-center justify-center gap-4 py-8">
                     <h1 className="text-xl font-semibold text-green-600">Worker is on the way, please wait for them to arrive.</h1>
+                </div>
+            ) : isBookingRejected ? (
+                <div className="flex flex-col items-center justify-center gap-4 py-8">
+                    <h1 className="text-xl font-semibold text-red-600">Booking rejected by worker, please increase the price range and try again.</h1>
                 </div>
             ) : null
             }

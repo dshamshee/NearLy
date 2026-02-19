@@ -43,6 +43,7 @@ export const Searching = ({
     defaultValues: {
       workNeededProfession: WorkerProfessions.OTHER,
       workNeededDescription: "",
+      priceRange: 100,
       custLocation: {
         latitude: currentLocation.latitude,
         longitude: currentLocation.longitude,
@@ -63,9 +64,9 @@ export const Searching = ({
       const response = await fetch(
         `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
       );
-      
+
       const data = await response.json();
-      
+
       if (data.status === 'OK' && data.results && data.results.length > 0) {
         // Get the formatted address (first result is usually the most specific)
         const address = data.results[0].formatted_address;
@@ -106,7 +107,7 @@ export const Searching = ({
           console.log("Error on getting customer location", error);
           setLocationLoading(false);
           let errorMessage = "Unable to get your location. ";
-          
+
           switch (error.code) {
             case error.PERMISSION_DENIED:
               errorMessage += "Please allow location access in your browser settings. If accessing via IP address, try using HTTPS or localhost.";
@@ -121,7 +122,7 @@ export const Searching = ({
               errorMessage += "An unknown error occurred. Please try again.";
               break;
           }
-          
+
           setLocationError(errorMessage);
           toast.error(errorMessage, { duration: 5000, position: 'top-center' });
         },
@@ -133,7 +134,7 @@ export const Searching = ({
       );
     } else {
       // setCurrentLocation({latitude: 22.3040, longitude: 73.2027})
-      const defaultLocation = {latitude: 22.3040, longitude: 73.2027};
+      const defaultLocation = { latitude: 22.3040, longitude: 73.2027 };
       // form.setValue("custLocation", defaultLocation); // Remove in production
       setLocationLoading(false);
       const errorMsg = "Geolocation is not supported by your browser. Please use a modern browser or enable location services.";
@@ -160,12 +161,12 @@ export const Searching = ({
       });
       return;
     }
-    
-    console.log("find professionals clicked");
-    console.log("Submitting with location:", data.custLocation);
+
+    // console.log("find professionals clicked");
+    // console.log("Submitting with location:", data.custLocation);
     setBookingDetails(data);
     setMapLoaded(true);
-    toast.success("Finding Professionals...", {duration: 3000, position: 'top-center'})
+    toast.success("Finding Professionals...", { duration: 3000, position: 'top-center' })
   };
 
   return (
@@ -262,15 +263,65 @@ export const Searching = ({
             errors={
               form.formState.errors.workNeededProfession?.message
                 ? [
-                    {
-                      message:
-                        form.formState.errors.workNeededProfession?.message,
-                    },
-                  ]
+                  {
+                    message:
+                      form.formState.errors.workNeededProfession?.message,
+                  },
+                ]
                 : undefined
             }
           ></FieldError>
         </Field>
+
+        <Field>
+          <FieldLabel>Price Range</FieldLabel>
+          <Controller
+            name="priceRange"
+            control={form.control}
+            render={({ field }) => (
+              <Select
+                value={field.value?.toString() ?? ''}
+                onValueChange={(value) => {
+                  field.onChange(Number(value));
+                }}
+              >
+                <SelectTrigger className="w-[180px] bg-foreground/10">
+                  <SelectValue placeholder="Select Price Range" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Price Range</SelectLabel>
+                    <SelectItem value={"100"}>₹100</SelectItem>
+                    <SelectItem value={"200"}>₹200</SelectItem>
+                    <SelectItem value={"300"}>₹300</SelectItem>
+                    <SelectItem value={"400"}>₹400</SelectItem>
+                    <SelectItem value={"500"}>₹500</SelectItem>
+                    <SelectItem value={"600"}>₹600</SelectItem>
+                    <SelectItem value={"700"}>₹700</SelectItem>
+                    <SelectItem value={"800"}>₹800</SelectItem>
+                    <SelectItem value={"900"}>₹900</SelectItem>
+                    <SelectItem value={"1000"}>₹1000</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            )}
+          />
+
+          <FieldError
+            errors={
+              form.formState.errors.priceRange?.message
+                ? [
+                  {
+                    message:
+                      form.formState.errors.priceRange?.message,
+                  },
+                ]
+                : undefined
+            }
+          ></FieldError>
+        </Field>
+
+
         <Field>
           <FieldLabel>Description</FieldLabel>
           <Textarea
@@ -283,20 +334,20 @@ export const Searching = ({
             errors={
               form.formState.errors.workNeededDescription?.message
                 ? [
-                    {
-                      message:
-                        form.formState.errors.workNeededDescription?.message,
-                    },
-                  ]
+                  {
+                    message:
+                      form.formState.errors.workNeededDescription?.message,
+                  },
+                ]
                 : undefined
             }
           ></FieldError>
         </Field>
-        <Button 
-          type="submit" 
-          variant="default" 
+        <Button
+          type="submit"
+          variant="default"
           className="cursor-pointer hover:bg-orange-600"
-          // disabled={locationLoading || !currentLocation.latitude || !currentLocation.longitude}
+        // disabled={locationLoading || !currentLocation.latitude || !currentLocation.longitude}
         >
           {locationLoading ? "Getting Location..." : "Find Professionals"}
         </Button>
