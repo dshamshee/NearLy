@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Loader } from "@/components/ui/loader"
 import { Skeleton } from "@/components/ui/skeleton"
 
 
@@ -19,6 +20,7 @@ export default function Test() {
             </Card>
 
             <h1>Please wait while we process your request</h1>
+            {/* <Loader className="size-10 animate-spin" /> */}
         </div>
     )
 }

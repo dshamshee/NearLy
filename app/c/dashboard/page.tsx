@@ -13,6 +13,19 @@ import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner"
 import { useSocket } from "@/utils/socketContext";
 import { useSearchParams } from "next/navigation";
+import { Button } from "@/components/ui/button"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { IndianRupeeIcon } from "lucide-react";
 
 
 export interface NearbyWorkerType extends Omit<Worker, 'userId'> {
@@ -77,7 +90,7 @@ export default function CustomerDashboard() {
                 position: 'top-right',
             });
 
-            setTimeout(()=>{setIsBookingsent(false);}, 2000)
+            setTimeout(() => { setIsBookingsent(false); }, 2000)
 
         };
 
@@ -87,7 +100,7 @@ export default function CustomerDashboard() {
             });
             setIsBookingAccepted(false);
             setIsBookingRejected(true);
-            setTimeout(()=>{setIsBookingsent(false);}, 3000)
+            setTimeout(() => { setIsBookingsent(false); }, 3000)
         }
 
         const handleBookingRejectedError = (error: { message: string }) => {
@@ -270,6 +283,22 @@ export default function CustomerDashboard() {
         console.log("Booking request sent:", { bookingId, selectedWorkerId: workerId });
     }
 
+    const handleIncreasePrice = ()=>{
+        if (!bookingDetails) return;
+        setBookingDetails((prev) => ({
+            ...prev,
+            priceRange: (prev?.priceRange ?? 0) + 100
+        } as zodSearchingType)
+        )
+
+        setIsBookingsent(false);
+    }
+
+    const handleCancelIncreasePrice = ()=>{
+        setIsBookingRejected(false);
+        setIsBookingsent(false);
+    }
+
 
     return (
         <div className="mainContainer min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
@@ -300,6 +329,47 @@ export default function CustomerDashboard() {
 
             </div>
 
+
+            {
+                isBookingRejected && !isBookingsent && (
+                    <div className="mb-3 flex justify-center">
+                        <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <div className="relative inline-flex">
+                            <svg className="absolute inset-0 w-full h-full rounded-md overflow-visible">
+                                <rect
+                                    x="0" y="0"
+                                    width="100%" height="100%"
+                                    rx="8" ry="8"
+                                    fill="none"
+                                    stroke="#3b82f6"
+                                    strokeWidth="3"
+                                    pathLength="1"
+                                    strokeDasharray="0.08 0.92"
+                                    strokeLinecap="round"
+                                    style={{ strokeDashoffset: 1, animation: 'border-rotate 3s linear infinite' }}
+                                />
+                            </svg>
+                            <Button variant="outline" className="cursor-pointer px-14 shadow-md border-0 bg-background relative z-10 rounded-md hover:bg-accent">Increase</Button>
+                        </div>
+
+                    </AlertDialogTrigger>
+                    <AlertDialogContent size="sm">
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Booking Rejected</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                The worker has rejected your booking request. Please increase the price range and try again.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel onClick={handleCancelIncreasePrice}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleIncreasePrice}>Increase by 100 Rs</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+                    </div>
+                )
+            }
 
             {nearbyWorkers && nearbyWorkers.length > 0 && !isBookingsent ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{

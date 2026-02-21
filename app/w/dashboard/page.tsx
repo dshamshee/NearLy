@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { updateWorkerStatus } from "@/actions/updateWorkerStatus";
 import { Switch } from "@/components/ui/switch";
-import { Calendar, Clock, DollarSign, Briefcase, User, CheckCircle2, XCircle, Clock3 } from "lucide-react";
+import { Calendar, Clock, DollarSign, Briefcase, User, CheckCircle2, XCircle, Clock3, IndianRupeeIcon } from "lucide-react";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
@@ -738,7 +738,9 @@ export default function WorkerDashboard() {
                                 </p>
                             </div>
                             <div className="bg-primary/10 p-3 rounded-full">
-                                <DollarSign className="size-6 text-primary" />
+                                {/* <DollarSign className="size-6 text-primary" /> */}
+                                <IndianRupeeIcon className="size-6 text-primary dark:text-primary/80" />
+                                
                             </div>
                         </div>
                     </div>
