@@ -1,14 +1,13 @@
 import mongoose from "mongoose";
 import {Worker, WorkerProfessions} from '@/types/worker'
-import { Decimal128 } from "mongodb";
 
 
 const WorkerSchema = new mongoose.Schema<Worker>({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", unique: true, required: true },
     aadharNumber: { type: String, unique: true, sparse: true },
     isAadharVerified: { type: Boolean, default: false },
-    longitude: {type: Decimal128, default: new Decimal128("0")},
-    latitude: {type: Decimal128, default: new Decimal128("0")},
+    longitude: {type: String, default: "0"},
+    latitude: {type: String, default: "0"},
     currentBookingId: { type: mongoose.Schema.Types.ObjectId, ref: "Booking" },
     isActive: {type: Boolean, default: false},
     serviceCharge: {type: Number, default: 0},

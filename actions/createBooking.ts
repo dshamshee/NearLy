@@ -2,7 +2,6 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import BookingModel from "@/models/booking";
 import dbConnect from "@/utils/dbConnection"
 import { getServerSession } from "next-auth";
-import { Decimal128 } from "mongodb";
 
 export const createBooking = async ({workNeededDescription, workNeededProfession, customerLocation}: {workNeededDescription: string, workNeededProfession: string, customerLocation: {longitude: number, latitude: number}})=>{
 
@@ -23,8 +22,10 @@ export const createBooking = async ({workNeededDescription, workNeededProfession
             bookingStatus: "PENDING",
             workNeededDescription: workNeededDescription,
             workNeededProfession: workNeededProfession,
-            customerLongitude: new Decimal128(customerLocation.longitude.toString()),
-            customerLatitude: new Decimal128(customerLocation.latitude.toString()),
+            customerLongitude: customerLocation.longitude.toString(),
+            customerLatitude: customerLocation.latitude.toString(),
+            workerLongitude: "0",
+            workerLatitude: "0",
         })
         await newBooking.save();
 

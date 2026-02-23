@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 import {Bookings} from '@/types/booking'
-import { Decimal128 } from "mongodb";
 
 const BookingSchema = new mongoose.Schema<Bookings>({
     customerId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
@@ -12,10 +11,10 @@ const BookingSchema = new mongoose.Schema<Bookings>({
     cancellationFee: { type: Number, default: 0 },
     workNeededDescription: { type: String, required: true },
     workNeededProfession: { type: String, required: true },
-    customerLongitude: { type: Decimal128, required: true },
-    customerLatitude: { type: Decimal128, required: true },
-    workerLatitude: { type: Decimal128, required: true },
-    workerLongitude: { type: Decimal128, required: true },
+    customerLongitude: { type: String, required: true },
+    customerLatitude: { type: String, required: true },
+    workerLatitude: { type: String, required: true },
+    workerLongitude: { type: String, required: true },
     workerOutForWork: { type: Boolean, default: false },
     isWorkCompleted: { type: Boolean, default: false },
     workerArrivedAtDestination: { type: Boolean, default: false },

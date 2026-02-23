@@ -2,6 +2,10 @@
 import { useEffect, useRef } from "react";
 import { setOptions, importLibrary } from "@googlemaps/js-api-loader";
 
+// ~20 meters - when worker and customer are this close (e.g. same device, different browsers),
+// show both markers at the same position so they overlap (browsers return slightly different coords)
+const SAME_LOCATION_THRESHOLD = 0.0002;
+
 export const Map = ({workerLat, workerLng, custLat, custLng}: {workerLat: number, workerLng: number, custLat: number, custLng: number})=>{
 
     const mapRef = useRef<HTMLDivElement>(null);
@@ -34,6 +38,14 @@ export const Map = ({workerLat, workerLng, custLat, custLng}: {workerLat: number
         const centerLat = hasValidWorker && hasValidCustomer ? (workerLat + custLat) / 2 : (hasValidCustomer ? custLat : 20.5937);
         const centerLng = hasValidWorker && hasValidCustomer ? (workerLng + custLng) / 2 : (hasValidCustomer ? custLng : 78.9629);
 
+        // When both are very close (same device/browser variance), use shared position so markers overlap
+        const areSameLocation = hasValidWorker && hasValidCustomer &&
+            Math.abs(workerLat - custLat) < SAME_LOCATION_THRESHOLD &&
+            Math.abs(workerLng - custLng) < SAME_LOCATION_THRESHOLD;
+        const sharedPosition = areSameLocation ? { lat: (workerLat + custLat) / 2, lng: (workerLng + custLng) / 2 } : null;
+        const workerDisplayPos = sharedPosition ?? { lat: workerLat, lng: workerLng };
+        const customerDisplayPos = sharedPosition ?? { lat: custLat, lng: custLng };
+
         // Map Options
         const mapOptions: google.maps.MapOptions = {
             center: { lat: centerLat, lng: centerLng },
@@ -49,7 +61,7 @@ export const Map = ({workerLat, workerLng, custLat, custLng}: {workerLat: number
         // Create worker marker
         const workerMarker = new Marker({
             map: map,
-            position: { lat: workerLat, lng: workerLng },
+            position: workerDisplayPos,
             title: 'Worker Location',
             icon: {
                 path: google.maps.SymbolPath.CIRCLE,
@@ -66,7 +78,7 @@ export const Map = ({workerLat, workerLng, custLat, custLng}: {workerLat: number
         if (custLat !== 0 && custLng !== 0) {
           const customerMarker = new Marker({
               map: map,
-              position: { lat: custLat, lng: custLng },
+              position: customerDisplayPos,
               title: 'Customer Location',
               icon: {
                   path: google.maps.SymbolPath.CIRCLE,
@@ -95,10 +107,8 @@ export const Map = ({workerLat, workerLng, custLat, custLng}: {workerLat: number
         });
         directionsRendererRef.current = directionsRenderer;
 
-        // Calculate and display route - only when both origin and destination are valid
-        const sameLocation = Math.abs(workerLat - custLat) < 0.0001 && Math.abs(workerLng - custLng) < 0.0001;
-
-        if (hasValidCustomer && hasValidWorker && !sameLocation) {
+        // Calculate and display route - only when both origin and destination are valid and not same location
+        if (hasValidCustomer && hasValidWorker && !areSameLocation) {
           directionsService.route({
             origin: { lat: workerLat, lng: workerLng },
             destination: { lat: custLat, lng: custLng },
@@ -134,10 +144,14 @@ export const Map = ({workerLat, workerLng, custLat, custLng}: {workerLat: number
       const updateMap = async () => {
         if (!isInitializedRef.current || !mapInstanceRef.current || !workerMarkerRef.current || !directionsRendererRef.current || !directionsServiceRef.current) return;
         
-        const newWorkerPosition = {
-          lat: workerLat,
-          lng: workerLng,
-        };
+        const hasValidWorker = (workerLat !== 0 || workerLng !== 0);
+        const hasValidCustomer = (custLat !== 0 || custLng !== 0);
+        const areSameLocation = hasValidWorker && hasValidCustomer &&
+            Math.abs(workerLat - custLat) < SAME_LOCATION_THRESHOLD &&
+            Math.abs(workerLng - custLng) < SAME_LOCATION_THRESHOLD;
+        const sharedPosition = areSameLocation ? { lat: (workerLat + custLat) / 2, lng: (workerLng + custLng) / 2 } : null;
+        const newWorkerPosition = sharedPosition ?? { lat: workerLat, lng: workerLng };
+        const customerPosition = sharedPosition ?? { lat: custLat, lng: custLng };
         
         // Update worker marker position
         if (workerMarkerRef.current) {
@@ -145,12 +159,7 @@ export const Map = ({workerLat, workerLng, custLat, custLng}: {workerLat: number
         }
         
         // Create or update customer marker if coordinates are valid
-        const hasValidWorker = (workerLat !== 0 || workerLng !== 0);
-        const hasValidCustomer = (custLat !== 0 || custLng !== 0);
-        const sameLocation = Math.abs(workerLat - custLat) < 0.0001 && Math.abs(workerLng - custLng) < 0.0001;
-
         if (hasValidCustomer) {
-          const customerPosition = { lat: custLat, lng: custLng };
           
           if (customerMarkerRef.current) {
             // Update existing customer marker position
@@ -175,7 +184,7 @@ export const Map = ({workerLat, workerLng, custLat, custLng}: {workerLat: number
           }
           
           // Update route - only when both locations are valid and different
-          if (directionsServiceRef.current && hasValidWorker && !sameLocation) {
+          if (directionsServiceRef.current && hasValidWorker && !areSameLocation) {
             directionsServiceRef.current.route({
               origin: newWorkerPosition,
               destination: customerPosition,
@@ -198,7 +207,7 @@ export const Map = ({workerLat, workerLng, custLat, custLng}: {workerLat: number
                 mapInstanceRef.current?.fitBounds(bounds);
               }
             });
-          } else if (directionsRendererRef.current && (!hasValidWorker || sameLocation)) {
+          } else if (directionsRendererRef.current && (!hasValidWorker || areSameLocation)) {
             // Clear route when worker location is invalid or same as customer
             directionsRendererRef.current.setDirections({ routes: [] });
             const map = mapInstanceRef.current;

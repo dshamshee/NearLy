@@ -2,7 +2,6 @@
 import WorkerModel from "@/models/worker";
 import { Response } from "@/types/response";
 import dbConnect from "@/utils/dbConnection";
-import { Decimal128 } from "mongodb";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 
@@ -45,8 +44,8 @@ export async function updateWorkerStatus(status: boolean, latitude: number, long
         if (latitude !== undefined && longitude !== undefined) {
             // Store coordinates with full precision (no truncation)
             // Decimal128 can handle full double precision
-            worker.latitude = new Decimal128(latitude.toString());
-            worker.longitude = new Decimal128(longitude.toString());
+            worker.latitude = latitude.toString();
+            worker.longitude = longitude.toString();
         }
         await worker.save();
 

@@ -18,10 +18,11 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangleIcon } from "lucide-react"
 import { getWorkerProfileStatus } from "@/actions/workerProfileStatus";
 import Link from "next/link";
-import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { useSocket } from "@/utils/socketContext";
 import { Spinner } from "@/components/ui/spinner";
 import { zodIncomingBookingType } from "@/zod/incommingBooking";
+import { Input } from "@/components/ui/input";
 
 
 
@@ -33,12 +34,12 @@ export default function WorkerDashboard() {
 
     // Show login success toast when redirected from login
     useEffect(() => {
-      if (searchParams.get("login") === "success" && typeof window !== "undefined") {
-        toast.success("Login Successful");
-        const url = new URL(window.location.href);
-        url.searchParams.delete("login");
-        window.history.replaceState({}, "", url.pathname + (url.search || ""));
-      }
+        if (searchParams.get("login") === "success" && typeof window !== "undefined") {
+            toast.success("Login Successful");
+            const url = new URL(window.location.href);
+            url.searchParams.delete("login");
+            window.history.replaceState({}, "", url.pathname + (url.search || ""));
+        }
     }, [searchParams]);
 
     const [isMapLoaded, setIsMapLoaded] = useState<boolean>(false);
@@ -54,6 +55,10 @@ export default function WorkerDashboard() {
     const [isProfileCompleted, setIsProfileCompleted] = useState<boolean>(false);
     const [checkingProfileStatus, setCheckingProfileStatus] = useState<boolean>(false);
     const [workDoneInterval, setWorkDoneInterval] = useState<number>(5);
+    const [makePayment, setMakePayment] = useState<boolean>(true);
+    const [amount, setAmount] = useState<number>(0)
+    const [isPaymentReceived, setIsPaymentReceived] = useState<boolean>(false);
+    const [paymentVerificationOTP, setPaymentVerificationOTP] = useState<number | null>(null);
 
     const [locationLoading, setLocationLoading] = useState<boolean>(false);
     const [locationError, setLocationError] = useState<string | null>(null);
@@ -78,19 +83,43 @@ export default function WorkerDashboard() {
         getWorkerDetails();
 
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition((position) => {
-                setLatitude(position.coords.latitude);
-                setLongitude(position.coords.longitude);
-            }, (error) => {
-                console.error('Geolocation error:', error);
-                toast.error("Unable to get your location. Please enable location access.", {
-                    position: 'top-right',
-                });
-            }, {
+            const tryGetPosition = (options: PositionOptions, isRetry = false) => {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        setLatitude(position.coords.latitude);
+                        setLongitude(position.coords.longitude);
+                        setLocationError(null);
+                    },
+                    (error: GeolocationPositionError) => {
+                        if (error.code === 3 && !isRetry) {
+                            // Timeout: retry with relaxed options (network/cached location is faster)
+                            tryGetPosition({
+                                enableHighAccuracy: false,
+                                timeout: 15000,
+                                maximumAge: 60000
+                            }, true);
+                            return;
+                        }
+                        const msg = `Geolocation error (code ${error.code}): ${error.message}`;
+                        console.error(msg);
+                        setLocationError(msg);
+                        const userMsg = error.code === 1
+                            ? "Location access denied. Please enable location permissions."
+                            : error.code === 3
+                                ? "Location request timed out. Please try again."
+                                : "Unable to get your location. Please enable location access.";
+                        toast.error(userMsg, {
+                            position: 'top-right',
+                        });
+                    },
+                    options
+                );
+            };
+            tryGetPosition({
                 enableHighAccuracy: true,
-                timeout: 10000,
+                timeout: 20000,
                 maximumAge: 0
-            })
+            });
         }
 
     }, [session])
@@ -209,7 +238,7 @@ export default function WorkerDashboard() {
     }
 
     // Function to reject the booking
-    const handleRejectBooking = (bookingId: string) =>{
+    const handleRejectBooking = (bookingId: string) => {
         try {
             if (!socket || !isConnected) return;
             socket.emit("reject-booking", { bookingId });
@@ -226,7 +255,7 @@ export default function WorkerDashboard() {
             });
             setIsBookingAccepted(false);
             setIsMapLoaded(false);
-            
+
             setIsBookingAccepted(false);
             setIsMapLoaded(false);
         }
@@ -289,34 +318,40 @@ export default function WorkerDashboard() {
                     (position) => {
                         checkLocationAndUpdate(position);
                     },
-                    (error) => {
-                        console.error('Geolocation error:', error);
-                        toast.error("Unable to get your location. Please enable location access.", {
+                    (error: GeolocationPositionError) => {
+                        const msg = `Geolocation error (code ${error.code}): ${error.message}`;
+                        console.error(msg);
+                        const userMsg = error.code === 1
+                            ? "Location access denied. Please enable location permissions."
+                            : error.code === 3
+                                ? "Location request timed out. Please try again."
+                                : "Unable to get your location. Please enable location access.";
+                        toast.error(userMsg, {
                             position: 'top-right',
                         });
                     },
                     {
                         enableHighAccuracy: true,
-                        timeout: 10000,
+                        timeout: 20000,
                         maximumAge: 0
                     }
                 );
             }
 
-            // Set up interval to check location every 5 seconds
+            // Set up interval to check location every 5 seconds (allow cached position for reliability)
             const interval = setInterval(() => {
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(
                         (position) => {
                             checkLocationAndUpdate(position);
                         },
-                        (error) => {
-                            console.error('Geolocation error in interval:', error);
+                        (error: GeolocationPositionError) => {
+                            console.warn(`Geolocation in interval (code ${error.code}): ${error.message}`);
                         },
                         {
-                            enableHighAccuracy: true,
-                            timeout: 10000,
-                            maximumAge: 0
+                            enableHighAccuracy: false,
+                            timeout: 15000,
+                            maximumAge: 5000
                         }
                     );
                 }
@@ -373,8 +408,7 @@ export default function WorkerDashboard() {
         }
 
         setArrivedAtDestination(true);
-        setArrivedNearby(false);
-        
+
 
         // Set initial countdown value (5 seconds)
         setWorkDoneInterval(5);
@@ -389,6 +423,8 @@ export default function WorkerDashboard() {
                     if (workDoneIntervalRef.current) {
                         clearInterval(workDoneIntervalRef.current);
                         workDoneIntervalRef.current = null;
+                        setArrivedNearby(false);
+
                     }
                     return 0;
                 }
@@ -573,13 +609,13 @@ export default function WorkerDashboard() {
         try {
             if (latitude && longitude) {
                 console.log("latitude", latitude, "longitude", longitude);
-                const response =  await updateWorkerStatus(newStatus, latitude, longitude);
+                const response = await updateWorkerStatus(newStatus, latitude, longitude);
 
-                
+
                 if (response.success) {
                     setIsActive(newStatus);
                     if (newStatus) {
-                        
+
                         // Register with tracking server after successful status update
                         if (socket && socket.connected) {
                             socket.emit("register-active-worker", session?.user?._id);
@@ -634,7 +670,7 @@ export default function WorkerDashboard() {
                             <Spinner className="size-4 inline-block animate-spin" />
                             <p className="text-sm text-muted-foreground">Checking your profile status...</p>
                         </div>
-                    ): (
+                    ) : (
                         !isProfileCompleted && (
                             <Alert className="max-w-5xl md:ml-[10%]" variant={"destructive"}>
                                 <AlertTriangleIcon />
@@ -647,7 +683,7 @@ export default function WorkerDashboard() {
                                         <Button variant="outline" className="cursor-pointer">
                                             Edit Profile
                                         </Button>
-                                    </Link> 
+                                    </Link>
                                 </AlertAction>
                             </Alert>
                         )
@@ -670,7 +706,7 @@ export default function WorkerDashboard() {
                             {
                                 isActiveLoading ? (
                                     <Spinner className="size-4 inline-block animate-spin" />
-                                ): (
+                                ) : (
                                     <Switch
                                         checked={isActive}
                                         onCheckedChange={handleAvailabilityToggle}
@@ -719,10 +755,49 @@ export default function WorkerDashboard() {
                 }
 
                 {
+                    makePayment && (
+                        <Card className="mx-auto">
+                            <CardContent className="flex flex-col md:flex-row items-center justify-between gap-2">
+                                <div>
+                                    <CardTitle>
+                                        <p className="text-lg font-semibold">Make Payment</p>
+                                    </CardTitle>
+                                    <CardDescription className="flex flex-col items-center justify-center gap-2">
+                                        <p className="text-sm text-muted-foreground">Please make payment to complete the booking</p>
+                                        <Input
+                                            type="number"
+                                            placeholder="Enter amount"
+                                            className={`w-full ${isPaymentReceived ? 'hidden': ''}`}
+                                            value={amount}
+                                            onChange={(e)=> setAmount(Number(e.target.value))}
+                                        />
+
+                                        <Input
+                                            type="number"
+                                            placeholder="Enter OTP"
+                                            className={`w-full ${isPaymentReceived ? '': 'hidden'}`}
+                                            value={paymentVerificationOTP ?? ''}
+                                            onChange={(e)=> setPaymentVerificationOTP(Number(e.target.value))}
+                                        />
+
+                                    </CardDescription>
+                                </div>
+
+                                <div className="flex items-center justify-center gap-2">
+                                    <Button variant="outline" className={`cursor-pointer ${isPaymentReceived ? 'hidden' : ''}`}>Cash</Button>
+                                    <Button variant="outline" className={`cursor-pointer ${isPaymentReceived ? 'hidden' : ''}`}>UPI</Button>
+                                    <Button variant="outline" className={`cursor-pointer ${isPaymentReceived ? '' : 'hidden'}`}>Verify Payment</Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )
+                }
+
+                {
                     isMapLoaded && (
                         <div className={`map `}>
-                    <Map workerLat={latitude ?? 0} workerLng={longitude ?? 0} custLat={incomingBooking?.jobDetails?.custLocation?.latitude ?? 0} custLng={incomingBooking?.jobDetails?.custLocation?.longitude ?? 0} />
-                </div>
+                            <Map workerLat={latitude ?? 0} workerLng={longitude ?? 0} custLat={incomingBooking?.jobDetails?.custLocation?.latitude ?? 0} custLng={incomingBooking?.jobDetails?.custLocation?.longitude ?? 0} />
+                        </div>
                     )
                 }
 
@@ -740,7 +815,7 @@ export default function WorkerDashboard() {
                             <div className="bg-primary/10 p-3 rounded-full">
                                 {/* <DollarSign className="size-6 text-primary" /> */}
                                 <IndianRupeeIcon className="size-6 text-primary dark:text-primary/80" />
-                                
+
                             </div>
                         </div>
                     </div>

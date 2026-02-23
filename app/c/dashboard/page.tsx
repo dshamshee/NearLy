@@ -25,7 +25,6 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { IndianRupeeIcon } from "lucide-react";
 
 
 export interface NearbyWorkerType extends Omit<Worker, 'userId'> {
