@@ -6,7 +6,7 @@ export interface Bookings {
     workerId: mongoose.Types.ObjectId;
     bookingDate: Date;
     bookingTime: Date;
-    bookingStatus: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
+    bookingStatus: "PENDING" | "ACCEPTED" | "REJECTED" | "CANCELLED" | "COMPLETED";
     cancelledBy?: "CUSTOMER" | "WORKER";
     cancellationFee?: number;
     workNeededDescription?: string;
@@ -18,4 +18,6 @@ export interface Bookings {
     workerOutForWork?: boolean;
     workerArrivedAtDestination?: boolean;
     isWorkCompleted?: boolean;
+    workerOTP?: string;
+    customerOTP?: string;
 }

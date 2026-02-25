@@ -25,6 +25,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { createBooking } from "@/actions/createBooking";
 
 
 export interface NearbyWorkerType extends Omit<Worker, 'userId'> {
@@ -250,7 +251,7 @@ export default function CustomerDashboard() {
 
 
     // Function to send a booking request to a worker
-    const sendBookingRequest = (workerId: string) => {
+    const sendBookingRequest = async(workerId: string) => {
         if (!socket || !isConnected) {
             toast.error("Not connected to server. Please wait...");
             return;
@@ -261,13 +262,20 @@ export default function CustomerDashboard() {
             return;
         }
 
-        const bookingId = `${session?.user?._id}-${workerId}`;
-        setTrackingBookingId(bookingId);
+        const booking = {
+            workerId: workerId,
+            bookingDetails: bookingDetails
+        }
+
+        const newBooking = await createBooking(booking)
+
+        // const bookingId = `${session?.user?._id}-${workerId}`;
+        setTrackingBookingId(newBooking.bookingId?.toString() ?? null);
 
         setIsBookingsent(true);
         setIsBookingRejected(false);
         socket.emit("send-booking-request", {
-            bookingId: bookingId,
+            bookingId: newBooking.bookingId?.toString() ?? null,
             selectedWorkerId: workerId,
             jobDetails: bookingDetails
         }, (response: { success?: boolean; error?: string } | undefined) => {
@@ -279,7 +287,7 @@ export default function CustomerDashboard() {
             }
         });
 
-        console.log("Booking request sent:", { bookingId, selectedWorkerId: workerId });
+        console.log("Booking request sent:", { bookingId: newBooking.bookingId?.toString() ?? null, selectedWorkerId: workerId });
     }
 
     const handleIncreasePrice = ()=>{

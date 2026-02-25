@@ -6,18 +6,20 @@ const BookingSchema = new mongoose.Schema<Bookings>({
     workerId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     bookingDate: { type: Date, required: true },
     bookingTime: { type: Date, required: true },
-    bookingStatus: { type: String, enum: ["PENDING", "CONFIRMED", "CANCELLED", "COMPLETED"], default: "PENDING" },
+    bookingStatus: { type: String, enum: ["PENDING", "ACCEPTED", "REJECTED", "CANCELLED", "COMPLETED"], default: "PENDING" },
     cancelledBy: { type: String, enum: ["CUSTOMER", "WORKER"] },
     cancellationFee: { type: Number, default: 0 },
     workNeededDescription: { type: String, required: true },
     workNeededProfession: { type: String, required: true },
     customerLongitude: { type: String, required: true },
     customerLatitude: { type: String, required: true },
-    workerLatitude: { type: String, required: true },
-    workerLongitude: { type: String, required: true },
+    workerLatitude: { type: String },
+    workerLongitude: { type: String },
     workerOutForWork: { type: Boolean, default: false },
     isWorkCompleted: { type: Boolean, default: false },
     workerArrivedAtDestination: { type: Boolean, default: false },
+    workerOTP: {type: String, default: ""},
+    customerOTP: {type: String, default: ""},
 })
 
 

@@ -11,20 +11,20 @@ import { useState } from "react"
 
 
 export default function Test() {
-    const [qrCode, setQrCode] = useState<string | null> (null);
+    // const [qrCode, setQrCode] = useState<string | null> (null);
 
 
-    const generateQRCode = async ()=>{        
-        try {
-            const response = await axios.post('/api/payment/generate-qr')
-            console.log(response.data);
-            console.log(response.data.data.image_url)
-            setQrCode(response.data.data.image_url)
-        } catch (error) {
-            console.log("Error in generate QR code", error);
-        }
+    // const generateQRCode = async ()=>{        
+    //     try {
+    //         const response = await axios.post('/api/payment/generate-qr')
+    //         console.log(response.data);
+    //         console.log(response.data.data.image_url)
+    //         setQrCode(response.data.data.image_url)
+    //     } catch (error) {
+    //         console.log("Error in generate QR code", error);
+    //     }
 
-    }
+    // }
 
 
     return (
@@ -43,12 +43,12 @@ export default function Test() {
 
             <h1>Please wait while we process your request</h1>
             {/* <Loader className="size-10 animate-spin" /> */}
-            <Button onClick={generateQRCode} variant="default" className="mt-4">Generate QR Code</Button>
-            {
+            {/* <Button onClick={generateQRCode} variant="default" className="mt-4">Generate QR Code</Button> */}
+            {/* {
                 qrCode && (
                     <Image src={qrCode} alt="QR Code" width={200} height={200} className="mt-4" />
                 )
-            }
+            } */}
         </div>
     );
 }

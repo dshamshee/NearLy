@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from "next/navigation";
-import { updateWorkerStatus } from "@/actions/updateWorkerStatus";
+import { isWorkCompleted, isWorkerArrived, isWorkerOutForService, updateBookingStatus} from "@/actions/updateBooking";
 import { Switch } from "@/components/ui/switch";
 import { Calendar, Clock, DollarSign, Briefcase, User, CheckCircle2, XCircle, Clock3, IndianRupeeIcon } from "lucide-react";
 import { useCallback, useEffect, useState, useRef } from "react";
@@ -18,11 +18,19 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangleIcon } from "lucide-react"
 import { getWorkerProfileStatus } from "@/actions/workerProfileStatus";
 import Link from "next/link";
-import { Card, CardAction, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardDescription, CardFooter, CardTitle } from "@/components/ui/card";
 import { useSocket } from "@/utils/socketContext";
 import { Spinner } from "@/components/ui/spinner";
 import { zodIncomingBookingType } from "@/zod/incommingBooking";
 import { Input } from "@/components/ui/input";
+import {
+    InputOTP,
+    InputOTPGroup,
+    InputOTPSeparator,
+    InputOTPSlot,
+} from "@/components/ui/input-otp"
+import { updateWorkerStatus } from "@/actions/updateWorkerStatus";
+
 
 
 
@@ -56,14 +64,17 @@ export default function WorkerDashboard() {
     const [checkingProfileStatus, setCheckingProfileStatus] = useState<boolean>(false);
     const [workDoneInterval, setWorkDoneInterval] = useState<number>(5);
     const [makePayment, setMakePayment] = useState<boolean>(true);
-    const [amount, setAmount] = useState<number>(0)
+    const [amount, setAmount] = useState<number>(incomingBooking?.jobDetails?.priceRange ?? 0)
     const [isPaymentReceived, setIsPaymentReceived] = useState<boolean>(false);
-    const [paymentVerificationOTP, setPaymentVerificationOTP] = useState<number | null>(null);
+    const [paymentVerificationOTP, setPaymentVerificationOTP] = useState<string>("");
+    const [yourOTP, setYourOTP] = useState<string>("");
+    const [verifyPayment, setVerifyPayment] = useState<boolean>(false);
 
     const [locationLoading, setLocationLoading] = useState<boolean>(false);
     const [locationError, setLocationError] = useState<string | null>(null);
     const [currentAddress, setCurrentAddress] = useState<string | null>(null);
     const [addressLoading, setAddressLoading] = useState<boolean>(false);
+
 
     // Ref to store the location sharing interval ID
     const locationIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -209,15 +220,17 @@ export default function WorkerDashboard() {
     }, [socket])
 
     // Function to accept the booking
-    const handleAcceptBooking = (bookingId: string) => {
+    const handleAcceptBooking = async (bookingId: string) => {
         try {
             if (!socket || !isConnected) return;
             socket.emit("accept-booking", { bookingId });
             toast.success("Booking accepted successfully", {
                 position: 'top-right',
             });
+            // const newBooking = await createBooking({})
             setIsBookingAccepted(true);
             setIsMapLoaded(true);
+            await updateBookingStatus(bookingId, "ACCEPTED");
             // Reset arrivedNearby when accepting a new booking
             setArrivedNearby(false);
             // Clear and reset work done interval
@@ -238,7 +251,7 @@ export default function WorkerDashboard() {
     }
 
     // Function to reject the booking
-    const handleRejectBooking = (bookingId: string) => {
+    const handleRejectBooking = async (bookingId: string) => {
         try {
             if (!socket || !isConnected) return;
             socket.emit("reject-booking", { bookingId });
@@ -248,6 +261,7 @@ export default function WorkerDashboard() {
             setIsBookingAccepted(false);
             setIsMapLoaded(false);
             setIncomingBooking(null);
+            await updateBookingStatus(bookingId, "REJECTED");
         } catch (error: unknown) {
             console.log(error instanceof Error ? error.message : "Internal Server Error on reject-booking");
             toast.error("Something went wrong", {
@@ -371,7 +385,7 @@ export default function WorkerDashboard() {
 
 
     // Function to notify the customer that the worker is on the way and start navigation
-    const handleOutForService = (bookingId: string) => {
+    const handleOutForService = async (bookingId: string) => {
         try {
             if (!socket || !isConnected) return;
             socket.emit("start-navigation", { bookingId });
@@ -380,6 +394,7 @@ export default function WorkerDashboard() {
             });
             setOutForService(true);
             handleStartNavigation();
+            await isWorkerOutForService(bookingId, true)
 
         } catch (error: unknown) {
             console.log(error instanceof Error ? error.message : "Internal Server Error on out-for-service");
@@ -394,7 +409,7 @@ export default function WorkerDashboard() {
 
 
     // Function to notify the customer that the worker has arrived at the location and the service is started
-    const handleStartWorking = () => {
+    const handleStartWorking = async () => {
         // Stop location sharing when worker arrives
         if (locationIntervalRef.current) {
             clearInterval(locationIntervalRef.current);
@@ -408,6 +423,7 @@ export default function WorkerDashboard() {
         }
 
         setArrivedAtDestination(true);
+        await isWorkerArrived(incomingBooking?.bookingId as string , true);
 
 
         // Set initial countdown value (5 seconds)
@@ -458,8 +474,41 @@ export default function WorkerDashboard() {
     }
 
 
+    // Function to handle the work done and display the payment card
     const handleWorkDone = () => {
         console.log("Work done");
+        setMakePayment(true);
+        setWorkDoneInterval(5);
+        setYourOTP(Math.floor(100000 + Math.random() * 900000).toString());
+    }
+
+    // Function to handle the cash payment
+    const handleCashPayment = () => {
+        console.log("Cash Payment");
+        setVerifyPayment(true);
+        setIsPaymentReceived(true)
+        setYourOTP(Math.floor(100000 + Math.random() * 900000).toString()); // Remove this line this is for testing purposes
+
+    }
+
+    // Function to handle the UPI payment
+    const handleUPIPayment = async () => {
+        console.log("UPI payment");
+        if (amount > 0) {
+            setVerifyPayment(true);
+            setIsPaymentReceived(true)
+        } else {
+            toast.error("Amount must be at least ₹100", {
+                position: 'top-right',
+            });
+        }
+    }
+
+
+    // Function to handle the payment verification 
+    const handlePaymentVerification = async () => {
+        console.log("OTP: ", paymentVerificationOTP)
+        await isWorkCompleted(incomingBooking?.bookingId ?? "", true)
     }
 
     // Function to reverse geocode coordinates to address and set to the current address state
@@ -760,35 +809,63 @@ export default function WorkerDashboard() {
                             <CardContent className="flex flex-col md:flex-row items-center justify-between gap-2">
                                 <div>
                                     <CardTitle>
-                                        <p className="text-lg font-semibold">Make Payment</p>
+                                        <p className="text-lg font-semibold">{isPaymentReceived ? `Verify Payment` : "Make Payment"}</p>
                                     </CardTitle>
                                     <CardDescription className="flex flex-col items-center justify-center gap-2">
-                                        <p className="text-sm text-muted-foreground">Please make payment to complete the booking</p>
+                                        <p className="text-sm text-muted-foreground">{isPaymentReceived ? "Please enter the customer's shared OTP to verify payment" : "Please make payment to complete the booking"}</p>
                                         <Input
                                             type="number"
                                             placeholder="Enter amount"
-                                            className={`w-full ${isPaymentReceived ? 'hidden': ''}`}
+                                            className={`w-full ${isPaymentReceived ? 'hidden' : ''}`}
                                             value={amount}
-                                            onChange={(e)=> setAmount(Number(e.target.value))}
+                                            onChange={(e) => setAmount(Number(e.target.value))}
+                                            min={100}
                                         />
 
-                                        <Input
+                                        {/* <Input
                                             type="number"
                                             placeholder="Enter OTP"
                                             className={`w-full ${isPaymentReceived ? '': 'hidden'}`}
                                             value={paymentVerificationOTP ?? ''}
                                             onChange={(e)=> setPaymentVerificationOTP(Number(e.target.value))}
-                                        />
+                                            maxLength={6}
+                                        /> */}
 
+                                        <InputOTP
+                                            id="paymentVerificationOTP"
+                                            className={`${isPaymentReceived ? '' : 'hidden'}`}
+                                            maxLength={6}
+                                            value={paymentVerificationOTP?.toString()}
+                                            onChange={(value) => setPaymentVerificationOTP(value)}
+                                        >
+                                            <InputOTPGroup className={`${isPaymentReceived ? '' : 'hidden'}`}>
+                                                <InputOTPSlot index={0} />
+                                                <InputOTPSlot index={1} />
+                                                <InputOTPSlot index={2} />
+                                            </InputOTPGroup>
+                                            <InputOTPSeparator className={`${isPaymentReceived ? '' : 'hidden'}`} />
+                                            <InputOTPGroup className={`${isPaymentReceived ? '' : 'hidden'}`}>
+                                                <InputOTPSlot index={3} />
+                                                <InputOTPSlot index={4} />
+                                                <InputOTPSlot index={5} />
+                                            </InputOTPGroup>
+                                        </InputOTP>
                                     </CardDescription>
                                 </div>
 
                                 <div className="flex items-center justify-center gap-2">
-                                    <Button variant="outline" className={`cursor-pointer ${isPaymentReceived ? 'hidden' : ''}`}>Cash</Button>
-                                    <Button variant="outline" className={`cursor-pointer ${isPaymentReceived ? 'hidden' : ''}`}>UPI</Button>
-                                    <Button variant="outline" className={`cursor-pointer ${isPaymentReceived ? '' : 'hidden'}`}>Verify Payment</Button>
+                                    <Button variant="outline" className={`cursor-pointer ${isPaymentReceived ? 'hidden' : ''}`} onClick={handleCashPayment}>Cash</Button>
+                                    <Button variant="outline" className={`cursor-pointer ${isPaymentReceived ? 'hidden' : ''}`} onClick={handleUPIPayment}>UPI</Button>
+                                    <Button disabled={!verifyPayment} variant="outline" className={`cursor-pointer ${isPaymentReceived ? '' : 'hidden'}`} onClick={handlePaymentVerification}>Verify Payment</Button>
                                 </div>
                             </CardContent>
+
+                            <CardFooter className="flex items-center justify-center gap-2">
+                            <span className="text-sm text-muted-foreground flex flex-col items-center justify-center">
+                                        <p className="text-2xl font-bold text-primary">{yourOTP}</p>
+                                        <p className="text-center">Share this OTP with the customer to verify payment</p>
+                                    </span>
+                            </CardFooter>
                         </Card>
                     )
                 }
