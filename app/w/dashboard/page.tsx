@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { isWorkCompleted, isWorkerArrived, isWorkerOutForService, updateBookingStatus} from "@/actions/updateBooking";
 import { Switch } from "@/components/ui/switch";
-import { Calendar, Clock, DollarSign, Briefcase, User, CheckCircle2, XCircle, Clock3, IndianRupeeIcon } from "lucide-react";
+import { Calendar, Clock, Briefcase, User, CheckCircle2, XCircle, Clock3, IndianRupeeIcon } from "lucide-react";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangleIcon } from "lucide-react"
 import { getWorkerProfileStatus } from "@/actions/workerProfileStatus";
 import Link from "next/link";
-import { Card, CardAction, CardContent, CardDescription, CardFooter, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardTitle } from "@/components/ui/card";
 import { useSocket } from "@/utils/socketContext";
 import { Spinner } from "@/components/ui/spinner";
 import { zodIncomingBookingType } from "@/zod/incommingBooking";
@@ -63,6 +63,7 @@ export default function WorkerDashboard() {
     const [isProfileCompleted, setIsProfileCompleted] = useState<boolean>(false);
     const [checkingProfileStatus, setCheckingProfileStatus] = useState<boolean>(false);
     const [workDoneInterval, setWorkDoneInterval] = useState<number>(5);
+    const [isWorkDoneClicked, setIsWorkDoneClicked] = useState<boolean>(false);
     const [makePayment, setMakePayment] = useState<boolean>(true);
     const [amount, setAmount] = useState<number>(incomingBooking?.jobDetails?.priceRange ?? 0)
     const [isPaymentReceived, setIsPaymentReceived] = useState<boolean>(false);
@@ -196,9 +197,12 @@ export default function WorkerDashboard() {
         const handleIncomingRequest = async (data: zodIncomingBookingType) => {
             setIncomingBooking(data);
             // setIsBookingRejected(false)
-            // Reset arrivedNearby when receiving a new booking
+            // Reset flow state when receiving a new booking
             setArrivedNearby(false);
+            setOutForService(false);
             setArrivedAtDestination(false);
+            setIsWorkDoneClicked(false);
+            setAmount(data.jobDetails.priceRange);
             // Clear and reset work done interval
             if (workDoneIntervalRef.current) {
                 clearInterval(workDoneIntervalRef.current);
@@ -231,8 +235,11 @@ export default function WorkerDashboard() {
             setIsBookingAccepted(true);
             setIsMapLoaded(true);
             await updateBookingStatus(bookingId, "ACCEPTED");
-            // Reset arrivedNearby when accepting a new booking
+            // Reset flow state when accepting a new booking
             setArrivedNearby(false);
+            setOutForService(false);
+            setArrivedAtDestination(false);
+            setIsWorkDoneClicked(false);
             // Clear and reset work done interval
             if (workDoneIntervalRef.current) {
                 clearInterval(workDoneIntervalRef.current);
@@ -305,7 +312,7 @@ export default function WorkerDashboard() {
 
             console.log('Distance to destination:', distance, 'meters');
 
-            if (distance < 50) {
+            if (distance < 20) {
                 setArrivedNearby(true);
             }
         }
@@ -477,8 +484,9 @@ export default function WorkerDashboard() {
     // Function to handle the work done and display the payment card
     const handleWorkDone = () => {
         console.log("Work done");
+        setIsWorkDoneClicked(true);
         setMakePayment(true);
-        setWorkDoneInterval(5);
+        // setWorkDoneInterval(5);
         setYourOTP(Math.floor(100000 + Math.random() * 900000).toString());
     }
 
@@ -795,8 +803,8 @@ export default function WorkerDashboard() {
                                     <Button disabled={isBookingAccepted} className="cursor-pointer text-red-500" variant="outline" onClick={() => handleRejectBooking(incomingBooking.bookingId)}>Reject</Button>
                                     <Button disabled={isBookingAccepted} className="cursor-pointer text-green-500" variant="outline" onClick={() => handleAcceptBooking(incomingBooking.bookingId)}>Accept</Button>
                                     <Button disabled={!isBookingAccepted || outForService} className="cursor-pointer text-blue-500" variant="outline" onClick={() => handleOutForService(incomingBooking.bookingId)}>Out for Service</Button>
-                                    <Button disabled={!arrivedNearby} className="cursor-pointer text-green-500" variant="outline" onClick={handleStartWorking}>Arrived</Button>
-                                    <Button disabled={workDoneInterval !== 0} className="cursor-pointer text-green-500" variant="outline" onClick={handleWorkDone}>{workDoneInterval !== 0 ? `${workDoneInterval} sec` : "Done"}</Button>
+                                    <Button disabled={!outForService || !arrivedNearby || arrivedAtDestination} className="cursor-pointer text-green-500" variant="outline" onClick={handleStartWorking}>Arrived</Button>
+                                    <Button disabled={workDoneInterval !== 0 || !arrivedAtDestination || isWorkDoneClicked} className="cursor-pointer text-green-500" variant="outline" onClick={handleWorkDone}>{workDoneInterval !== 0 ? `${workDoneInterval} sec` : "Done"}</Button>
                                 </div>
                             </CardContent>
                         </Card>
@@ -812,7 +820,7 @@ export default function WorkerDashboard() {
                                         <p className="text-lg font-semibold">{isPaymentReceived ? `Verify Payment` : "Make Payment"}</p>
                                     </CardTitle>
                                     <CardDescription className="flex flex-col items-center justify-center gap-2">
-                                        <p className="text-sm text-muted-foreground">{isPaymentReceived ? "Please enter the customer's shared OTP to verify payment" : "Please make payment to complete the booking"}</p>
+                                        <p className="text-sm text-muted-foreground">{isPaymentReceived ? "Please enter the customer's shared OTP to verify payment" : "Enter the amount to request for payment"}</p>
                                         <Input
                                             type="number"
                                             placeholder="Enter amount"
@@ -854,8 +862,8 @@ export default function WorkerDashboard() {
                                 </div>
 
                                 <div className="flex items-center justify-center gap-2">
-                                    <Button variant="outline" className={`cursor-pointer ${isPaymentReceived ? 'hidden' : ''}`} onClick={handleCashPayment}>Cash</Button>
-                                    <Button variant="outline" className={`cursor-pointer ${isPaymentReceived ? 'hidden' : ''}`} onClick={handleUPIPayment}>UPI</Button>
+                                    <Button variant="outline" className={`cursor-pointer px-10 ${isPaymentReceived ? 'hidden' : ''}`} onClick={handleCashPayment}>Cash</Button>
+                                    <Button variant="outline" className={`cursor-pointer px-10 ${isPaymentReceived ? 'hidden' : ''}`} onClick={handleUPIPayment}>UPI</Button>
                                     <Button disabled={!verifyPayment} variant="outline" className={`cursor-pointer ${isPaymentReceived ? '' : 'hidden'}`} onClick={handlePaymentVerification}>Verify Payment</Button>
                                 </div>
                             </CardContent>

@@ -2,7 +2,6 @@ import WorkerModel from "@/models/worker";
 import { Response } from "@/types/response";
 import dbConnect from "@/utils/dbConnection";
 import { NextRequest, NextResponse } from "next/server";
-import { Decimal128 } from "mongodb";
 
 
 export async function POST(request: NextRequest){
@@ -31,8 +30,8 @@ export async function POST(request: NextRequest){
         if (latitude !== undefined && longitude !== undefined) {
             // Store coordinates with full precision (no truncation)
             // Decimal128 can handle full double precision
-            worker.latitude = new Decimal128(latitude.toString());
-            worker.longitude = new Decimal128(longitude.toString());
+            worker.latitude = latitude.toString();
+            worker.longitude = longitude.toString();
         }
         await worker.save();
 
