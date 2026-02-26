@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards";
 import Image from "next/image";
+import { ArrowBigRight, ArrowDownRightFromSquareIcon } from "lucide-react";
 
 
 
@@ -24,11 +25,11 @@ export default function Home() {
         <div className="flex flex-row gap-4 md:gap-8 items-center justify-center mt-4">
           {/* <Button variant="default" size="lg" >Find a Worker</Button> */}
           {/* <ScrollingButton text="Get Started" /> */}
-          <Button variant="default" size="lg">
+          {/* <Button variant="default" size="lg">
             <Link href={"/c/dashboard"}>Get Started</Link>
-          </Button>
-          <Button variant="outline" size="default">
-            <Link href={"/login"}>Join as a Professional</Link>
+          </Button> */}
+          <Button variant="outline" size="lg" className="cursor-pointer hover:text-primary hover:underline hover:translate-y-0.5 transition-all duration-300">
+            <Link href={"/login"} className="flex flex-row items-center gap-2">Get Started <span><ArrowBigRight className="size-4 animate-pulse" /></span></Link>
           </Button>
         </div>
       </div>

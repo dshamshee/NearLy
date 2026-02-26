@@ -12,8 +12,10 @@ export async function POST(req: NextRequest) {
             name: "NearLy",
             usage: "single_use",
             fixed_amount: true,
-            payment_amount: 300*100, // multiple by 100 to convert it into rupees
+            payment_amount: 3*100, // multiple by 100 to convert it into rupees
             description: "Please pay for the service",
+            // customer_id: "cust_HKsR5se84c5LTO",
+
             // customer_id optional - omit or pass a valid customer ID from your Razorpay account
             notes: {
                 purpose: "Please pay for the service"
