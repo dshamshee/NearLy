@@ -1,114 +1,184 @@
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { zodIncomingBookingType } from "@/zod/incommingBooking";
-import { create } from "zustand";
+import { toast } from "sonner";
+import type { Socket } from "socket.io-client";
 
-interface ActiveState {
-    isActive: boolean;
-    setIsActive: () => void;
+interface WorkerState {
+  // Core state
+  isActive: boolean;
+  incomingBooking: zodIncomingBookingType | null;
+  isBookingAccepted: boolean;
+  outForService: boolean;
+  arrivedAtDestination: boolean;
+  arrivedNearby: boolean;
+  location: { latitude: number; longitude: number };
+  amount: number;
+
+  // Payment state
+  isPaymentReceived: boolean;
+  verifyPayment: boolean;
+  makePayment: boolean;
+  yourOTP: string;
+
+  // Flow state
+  isMapLoaded: boolean;
+  isWorkDoneClicked: boolean;
+  workDoneInterval: number;
+
+  // Actions
+  setAvailability: (status: boolean) => void;
+  updateLocation: (lat: number, lng: number) => void;
+  setIncomingBooking: (booking: zodIncomingBookingType | null) => void;
+  setBookingAccepted: (value: boolean) => void;
+  setOutForService: (value: boolean) => void;
+  setArrivedAtDestination: (value: boolean) => void;
+  setArrivedNearby: (value: boolean) => void;
+  setAmount: (value: number) => void;
+  setIsPaymentReceived: (value: boolean) => void;
+  setVerifyPayment: (value: boolean) => void;
+  setMakePayment: (value: boolean) => void;
+  setYourOTP: (value: string) => void;
+  setIsMapLoaded: (value: boolean) => void;
+  setIsWorkDoneClicked: (value: boolean) => void;
+  setWorkDoneInterval: (value: number | ((prev: number) => number)) => void;
+  resetBookingFlow: () => void;
+
+  // Socket Logic
+  initSocketListeners: (socket: Socket | null) => void;
+  cleanupListeners: (socket: Socket | null) => void;
 }
 
-interface IsBookingAcceptedState {
-    isBookingAccepted: boolean;
-    setIsBookingAccepted: ()=> void;
-}
+const initialBookingState = {
+  incomingBooking: null as zodIncomingBookingType | null,
+  isBookingAccepted: false,
+  outForService: false,
+  arrivedAtDestination: false,
+  arrivedNearby: false,
+  isWorkDoneClicked: false,
+  workDoneInterval: 0,
+};
 
-interface OutForServiceState {
-    outForService: boolean;
-    setOutForService: ()=> void;
-}
+export const useWorkerStore = create<WorkerState>()(
+  persist(
+    (set, get) => ({
+      isActive: false,
+      ...initialBookingState,
+      location: { latitude: 0, longitude: 0 },
+      amount: 0,
+      isPaymentReceived: false,
+      verifyPayment: false,
+      makePayment: true,
+      yourOTP: "",
+      isMapLoaded: false,
 
-interface ArrivedAtDestinationState {
-    arrivedAtDestination: boolean;
-    setArrivedAtDestination: ()=> void;
-}
+      setAvailability: (status) => set({ isActive: status }),
 
-interface ArrivedNearbyState {
-    arrivedNearby: boolean;
-    setArrivedNearby: ()=> void;
-}
+      updateLocation: (lat, lng) =>
+        set({ location: { latitude: lat, longitude: lng } }),
 
-interface IncomingBookingState {
-    incomingBooking: zodIncomingBookingType | null;
-    setIncomingBooking: (booking: zodIncomingBookingType | null) => void;
-}
+      setIncomingBooking: (booking) =>
+        set({
+          incomingBooking: booking,
+          amount: booking?.jobDetails?.priceRange ?? 0,
+          ...(booking ? { isBookingAccepted: false } : {}),
+        }),
 
-interface LocationState {
-    location: {
-        latitude: number;
-        longitude: number;
-    } | null;
+      setBookingAccepted: (value) => set({ isBookingAccepted: value }),
 
-    setLocation: (location: {
-        latitude: number;
-        longitude: number;
-    } | null) => void;
-}
+      setOutForService: (value) => set({ outForService: value }),
 
-interface ProfileStatusState {
-    isProfileCompleted: boolean;
-    setIsProfileCompleted: () => void;
-}
+      setArrivedAtDestination: (value) =>
+        set({ arrivedAtDestination: value }),
 
-interface AddressState {
-    address: string | null;
-    setAddress: (address: string | null) => void;
-}
+      setArrivedNearby: (value) => set({ arrivedNearby: value }),
 
+      setAmount: (value) => set({ amount: value }),
 
+      setIsPaymentReceived: (value) => set({ isPaymentReceived: value }),
 
-export const useActive = create<ActiveState>()( (set) => ({
-        isActive: false,
-        setIsActive: () => set((state) => ({ isActive: !state.isActive })),
+      setVerifyPayment: (value) => set({ verifyPayment: value }),
+
+      setMakePayment: (value) => set({ makePayment: value }),
+
+      setYourOTP: (value) => set({ yourOTP: value }),
+
+      setIsMapLoaded: (value) => set({ isMapLoaded: value }),
+
+      setIsWorkDoneClicked: (value) => set({ isWorkDoneClicked: value }),
+
+      setWorkDoneInterval: (value) =>
+        set((state) => ({
+          workDoneInterval:
+            typeof value === "function" ? value(state.workDoneInterval) : value,
+        })),
+
+      resetBookingFlow: () =>
+        set({
+          ...initialBookingState,
+          incomingBooking: get().incomingBooking, // Keep incomingBooking for display
+        }),
+
+      initSocketListeners: (socket) => {
+        if (!socket) return;
+
+        const handleIncomingRequest = (data: zodIncomingBookingType) => {
+          set({
+            incomingBooking: data,
+            amount: data.jobDetails.priceRange,
+            isBookingAccepted: false,
+            arrivedNearby: false,
+            outForService: false,
+            arrivedAtDestination: false,
+            isWorkDoneClicked: false,
+            workDoneInterval: 0,
+          });
+          toast.info("New booking request received!", {
+            position: "top-right",
+            description: "You have a new booking request. Check details below.",
+          });
+        };
+
+        const handlePaymentReceived = (data: { amount: number }) => {
+          set({
+            isPaymentReceived: true,
+            verifyPayment: true,
+            amount: data.amount,
+          });
+          toast.success("Payment received successfully", {
+            position: "top-right",
+          });
+        };
+
+        const handlePaymentError = (error: { message: string }) => {
+          set({ isPaymentReceived: false });
+          toast.error(error.message, {
+            position: "top-right",
+          });
+        };
+
+        socket.on("incoming-request", handleIncomingRequest);
+        socket.on("payment-received", handlePaymentReceived);
+        socket.on("payment-error", handlePaymentError);
+      },
+
+      cleanupListeners: (socket) => {
+        if (!socket) return;
+        socket.off("incoming-request");
+        socket.off("payment-received");
+        socket.off("payment-error");
+      },
     }),
-)
-
-export const useIncommingBooking = create<IncomingBookingState>()((set)=> ({
-        incomingBooking: null,
-        setIncomingBooking: (booking: zodIncomingBookingType | null) => set((state) => ({ incomingBooking: booking })),
-    }),
-)
-
-
-export const useIsBookingAccepted = create<IsBookingAcceptedState>()((set)=> ({
-    isBookingAccepted: false,
-    setIsBookingAccepted: ()=> set((state) => ({ isBookingAccepted: !state.isBookingAccepted })),
-}),
-)
-
-
-export const useOutForService = create<OutForServiceState>()((set)=>({
-    outForService: false,
-    setOutForService: ()=> set((state) => ({ outForService: !state.outForService })),
-}),
-)
-
-
-export const useArrivedAtDestination = create<ArrivedAtDestinationState>()((set)=>({
-    arrivedAtDestination: false,
-    setArrivedAtDestination: ()=> set((state) => ({ arrivedAtDestination: !state.arrivedAtDestination })),
-}),
-)
-
-
-export const useArrivedNearby = create<ArrivedNearbyState>()((set)=>({
-    arrivedNearby: false,
-    setArrivedNearby: ()=> set((state) => ({ arrivedNearby: !state.arrivedNearby })),
-}),
-)
-
-
-export const useLocation = create<LocationState>()((set)=> ({
-    location: null,
-    setLocation: (location: {latitude: number, longitude: number} | null) => set(() => ({ location: location })),
-}))
-
-
-export const useProfileStatus = create<ProfileStatusState>()((set)=> ({
-    isProfileCompleted: false,
-    setIsProfileCompleted: () => set((state) => ({ isProfileCompleted: !state.isProfileCompleted })),
-}))
-
-
-export const useAddress = create<AddressState>()((set)=> ({
-    address: null,
-    setAddress: (address: string | null) => set(() => ({ address: address })),
-}))
+    {
+      name: "worker-storage",
+      partialize: (state) => ({
+        isActive: state.isActive,
+        incomingBooking: state.incomingBooking,
+        isBookingAccepted: state.isBookingAccepted,
+        outForService: state.outForService,
+        arrivedAtDestination: state.arrivedAtDestination,
+        arrivedNearby: state.arrivedNearby,
+      }),
+    }
+  )
+);

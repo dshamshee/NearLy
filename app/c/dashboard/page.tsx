@@ -26,6 +26,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { createBooking } from "@/actions/createBooking";
+import Link from "next/link";
 
 
 export interface NearbyWorkerType extends Omit<Worker, 'userId'> {
@@ -54,6 +55,7 @@ export default function CustomerDashboard() {
     const [isWorkerOnTheWay, setIsWorkerOnTheWay] = useState<boolean>(false);
     const [isServiceStarted, setIsServiceStarted] = useState<boolean>(false);
     const [workerCurrentLocation, setWorkerCurrentLocation] = useState<{ latitude: number, longitude: number } | null>(null);
+    const [requestedPaymentAmount, setRequestedPaymentAmount] = useState<number>(0);
 
     const { data: session } = useSession();
     const searchParams = useSearchParams();
@@ -154,6 +156,21 @@ export default function CustomerDashboard() {
             setMapLoaded(true);
         }
 
+        const handlePaymentRequested = (data: {amount: number})=>{
+            toast.success("Payment requested successfully", {
+                position: 'top-right',
+            });
+            setRequestedPaymentAmount(data.amount);
+            // console.log("Payment Requested: ", data);
+        }
+
+        const handlePaymentError = (error: {message: string})=>{
+            toast.error(error.message || "Something went wrong", {
+                position: 'top-right',
+            });
+            // setIsPaymentReceived(false);
+        }
+
         socket.on("booking-confirmed", handleBookingConfirmed);
         socket.on("booking-request-error", handleBookingError);
         socket.on("booking-rejected", handleBookingRejected);
@@ -164,6 +181,8 @@ export default function CustomerDashboard() {
         socket.on("start-navigation-error", handleStartNavigationError);
         socket.on("update-location-error", handleUpdateLocationError);
         socket.on("confirm-reached-error", handleConfirmReachedError);
+        socket.on("payment-requested", handlePaymentRequested);
+        socket.on("payment-error", handlePaymentError);
 
         return () => {
             socket.off("booking-confirmed", handleBookingConfirmed);
@@ -173,6 +192,8 @@ export default function CustomerDashboard() {
             socket.off("worker-started-navigation", handleWorkerStartedNavigation);
             socket.off('location-broadcast', handleLocationBroadcast);
             socket.off("worker-arrived", handleWorkerArrived);
+            socket.off("payment-requested", handlePaymentRequested);
+            socket.off("payment-error", handlePaymentError);
         };
     }, [socket]);
 
@@ -447,6 +468,8 @@ export default function CustomerDashboard() {
                     </div>
                 )
             }
+
+            <Link href="/c/payment">Make Payment</Link>
         </div>
     )
 }

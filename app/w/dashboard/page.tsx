@@ -21,7 +21,6 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardFooter, CardTitle } from "@/components/ui/card";
 import { useSocket } from "@/utils/socketContext";
 import { Spinner } from "@/components/ui/spinner";
-import { zodIncomingBookingType } from "@/zod/incommingBooking";
 import { Input } from "@/components/ui/input";
 import {
     InputOTP,
@@ -30,6 +29,7 @@ import {
     InputOTPSlot,
 } from "@/components/ui/input-otp"
 import { updateWorkerStatus } from "@/actions/updateWorkerStatus";
+import { useWorkerStore } from "@/store/useWorkerStore";
 
 
 
@@ -40,6 +40,44 @@ export default function WorkerDashboard() {
     const searchParams = useSearchParams();
     const { socket, isConnected } = useSocket();
 
+    // Zustand store state and actions
+    const {
+        isActive,
+        incomingBooking,
+        isBookingAccepted,
+        outForService,
+        arrivedAtDestination,
+        arrivedNearby,
+        location,
+        amount,
+        isPaymentReceived,
+        verifyPayment,
+        makePayment,
+        yourOTP,
+        isMapLoaded,
+        isWorkDoneClicked,
+        workDoneInterval,
+        setAvailability,
+        updateLocation,
+        setIncomingBooking,
+        setBookingAccepted,
+        setOutForService,
+        setArrivedAtDestination,
+        setArrivedNearby,
+        setAmount,
+        setIsPaymentReceived,
+        setVerifyPayment,
+        setMakePayment,
+        setYourOTP,
+        setIsMapLoaded,
+        setIsWorkDoneClicked,
+        setWorkDoneInterval,
+        resetBookingFlow,
+    } = useWorkerStore();
+
+    const latitude = location.latitude;
+    const longitude = location.longitude;
+
     // Show login success toast when redirected from login
     useEffect(() => {
         if (searchParams.get("login") === "success" && typeof window !== "undefined") {
@@ -48,39 +86,21 @@ export default function WorkerDashboard() {
             url.searchParams.delete("login");
             window.history.replaceState({}, "", url.pathname + (url.search || ""));
         }
+
     }, [searchParams]);
 
-    const [isMapLoaded, setIsMapLoaded] = useState<boolean>(false);
-    const [isActive, setIsActive] = useState<boolean>(false);
     const [isActiveLoading, setIsActiveLoading] = useState<boolean>(false);
-    const [incomingBooking, setIncomingBooking] = useState<zodIncomingBookingType | null>(null)
-    const [isBookingAccepted, setIsBookingAccepted] = useState<boolean>(false);
-    const [outForService, setOutForService] = useState<boolean>(false);
-    const [arrivedAtDestination, setArrivedAtDestination] = useState<boolean>(false);
-    const [arrivedNearby, setArrivedNearby] = useState<boolean>(false);
-    const [latitude, setLatitude] = useState<number>(0);
-    const [longitude, setLongitude] = useState<number>(0);
     const [isProfileCompleted, setIsProfileCompleted] = useState<boolean>(false);
     const [checkingProfileStatus, setCheckingProfileStatus] = useState<boolean>(false);
-    const [workDoneInterval, setWorkDoneInterval] = useState<number>(5);
-    const [isWorkDoneClicked, setIsWorkDoneClicked] = useState<boolean>(false);
-    const [makePayment, setMakePayment] = useState<boolean>(true);
-    const [amount, setAmount] = useState<number>(incomingBooking?.jobDetails?.priceRange ?? 0)
-    const [isPaymentReceived, setIsPaymentReceived] = useState<boolean>(false);
     const [paymentVerificationOTP, setPaymentVerificationOTP] = useState<string>("");
-    const [yourOTP, setYourOTP] = useState<string>("");
-    const [verifyPayment, setVerifyPayment] = useState<boolean>(false);
 
     const [locationLoading, setLocationLoading] = useState<boolean>(false);
     const [locationError, setLocationError] = useState<string | null>(null);
     const [currentAddress, setCurrentAddress] = useState<string | null>(null);
     const [addressLoading, setAddressLoading] = useState<boolean>(false);
 
-
     // Ref to store the location sharing interval ID
     const locationIntervalRef = useRef<NodeJS.Timeout | null>(null);
-    // Ref to store incomingBooking to avoid closure issues
-    const incomingBookingRef = useRef<zodIncomingBookingType | null>(null);
     // Ref to store the work done interval ID
     const workDoneIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -98,8 +118,7 @@ export default function WorkerDashboard() {
             const tryGetPosition = (options: PositionOptions, isRetry = false) => {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
-                        setLatitude(position.coords.latitude);
-                        setLongitude(position.coords.longitude);
+                        useWorkerStore.getState().updateLocation(position.coords.latitude, position.coords.longitude);
                         setLocationError(null);
                     },
                     (error: GeolocationPositionError) => {
@@ -184,45 +203,6 @@ export default function WorkerDashboard() {
         };
     }, [])
 
-    // Keep incomingBookingRef in sync with incomingBooking state
-    useEffect(() => {
-        incomingBookingRef.current = incomingBooking;
-    }, [incomingBooking])
-
-
-    // Handle incoming booking requests
-    useEffect(() => {
-        if (!socket) return;
-
-        const handleIncomingRequest = async (data: zodIncomingBookingType) => {
-            setIncomingBooking(data);
-            // setIsBookingRejected(false)
-            // Reset flow state when receiving a new booking
-            setArrivedNearby(false);
-            setOutForService(false);
-            setArrivedAtDestination(false);
-            setIsWorkDoneClicked(false);
-            setAmount(data.jobDetails.priceRange);
-            // Clear and reset work done interval
-            if (workDoneIntervalRef.current) {
-                clearInterval(workDoneIntervalRef.current);
-                workDoneIntervalRef.current = null;
-            }
-            setWorkDoneInterval(0);
-            toast.info("New booking request received!", {
-                position: 'top-right',
-                description: `You have a new booking request. Check details below.`
-            });
-        };
-
-        socket.on("incoming-request", handleIncomingRequest);
-
-        // Cleanup listener on unmount or socket change
-        return () => {
-            socket.off("incoming-request", handleIncomingRequest);
-        };
-    }, [socket])
-
     // Function to accept the booking
     const handleAcceptBooking = async (bookingId: string) => {
         try {
@@ -231,28 +211,21 @@ export default function WorkerDashboard() {
             toast.success("Booking accepted successfully", {
                 position: 'top-right',
             });
-            // const newBooking = await createBooking({})
-            setIsBookingAccepted(true);
+            resetBookingFlow();
+            setBookingAccepted(true);
             setIsMapLoaded(true);
             await updateBookingStatus(bookingId, "ACCEPTED");
-            // Reset flow state when accepting a new booking
-            setArrivedNearby(false);
-            setOutForService(false);
-            setArrivedAtDestination(false);
-            setIsWorkDoneClicked(false);
-            // Clear and reset work done interval
             if (workDoneIntervalRef.current) {
                 clearInterval(workDoneIntervalRef.current);
                 workDoneIntervalRef.current = null;
             }
             setWorkDoneInterval(0);
-            // Keep incomingBooking so the card remains visible after acceptance
         } catch (error: unknown) {
             console.log(error instanceof Error ? error.message : "Internal Server Error on accept-booking");
             toast.error("Something went wrong", {
                 position: 'top-right',
             });
-            setIsBookingAccepted(false);
+            setBookingAccepted(false);
             setIsMapLoaded(false);
         }
     }
@@ -265,7 +238,7 @@ export default function WorkerDashboard() {
             toast.success("Booking rejected successfully", {
                 position: 'top-right',
             });
-            setIsBookingAccepted(false);
+            setBookingAccepted(false);
             setIsMapLoaded(false);
             setIncomingBooking(null);
             await updateBookingStatus(bookingId, "REJECTED");
@@ -274,38 +247,32 @@ export default function WorkerDashboard() {
             toast.error("Something went wrong", {
                 position: 'top-right',
             });
-            setIsBookingAccepted(false);
-            setIsMapLoaded(false);
-
-            setIsBookingAccepted(false);
+            setBookingAccepted(false);
             setIsMapLoaded(false);
         }
     }
 
-
     // Helper function to check location and update state
     const checkLocationAndUpdate = (position: GeolocationPosition) => {
-        const location = {
+        const loc = {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
         };
 
-        // Update latitude and longitude state
-        setLatitude(location.latitude);
-        setLongitude(location.longitude);
+        updateLocation(loc.latitude, loc.longitude);
 
         // Emit location update to server
         if (socket && session?.user?._id) {
-            socket.emit('update-location', { workerId: session.user._id, location });
-            console.log('updated location: ', location);
+            socket.emit('update-location', { workerId: session.user._id, location: loc });
+            console.log('updated location: ', loc);
         }
 
-        // Check if the worker has arrived nearby the destination using ref to avoid closure issues
-        const booking = incomingBookingRef.current;
+        // Check if the worker has arrived nearby the destination
+        const booking = useWorkerStore.getState().incomingBooking;
         if (booking?.jobDetails?.custLocation?.latitude && booking?.jobDetails?.custLocation?.longitude) {
             const distance = getDistanceInMeters(
-                location.latitude,
-                location.longitude,
+                loc.latitude,
+                loc.longitude,
                 booking.jobDetails.custLocation.latitude,
                 booking.jobDetails.custLocation.longitude
             );
@@ -317,7 +284,6 @@ export default function WorkerDashboard() {
             }
         }
     };
-
 
     // Function to send the worker's location update to the customer
     const handleStartNavigation = () => {
@@ -389,8 +355,6 @@ export default function WorkerDashboard() {
         }
     }
 
-
-
     // Function to notify the customer that the worker is on the way and start navigation
     const handleOutForService = async (bookingId: string) => {
         try {
@@ -401,19 +365,15 @@ export default function WorkerDashboard() {
             });
             setOutForService(true);
             handleStartNavigation();
-            await isWorkerOutForService(bookingId, true)
-
+            await isWorkerOutForService(bookingId, true);
         } catch (error: unknown) {
             console.log(error instanceof Error ? error.message : "Internal Server Error on out-for-service");
             toast.error("Something went wrong", {
                 position: 'top-right',
             });
             setOutForService(false);
-
         }
     }
-
-
 
     // Function to notify the customer that the worker has arrived at the location and the service is started
     const handleStartWorking = async () => {
@@ -430,8 +390,7 @@ export default function WorkerDashboard() {
         }
 
         setArrivedAtDestination(true);
-        await isWorkerArrived(incomingBooking?.bookingId as string , true);
-
+        await isWorkerArrived(incomingBooking?.bookingId as string, true);
 
         // Set initial countdown value (5 seconds)
         setWorkDoneInterval(5);
@@ -447,7 +406,6 @@ export default function WorkerDashboard() {
                         clearInterval(workDoneIntervalRef.current);
                         workDoneIntervalRef.current = null;
                         setArrivedNearby(false);
-
                     }
                     return 0;
                 }
@@ -480,31 +438,31 @@ export default function WorkerDashboard() {
         }
     }
 
-
     // Function to handle the work done and display the payment card
     const handleWorkDone = () => {
-        console.log("Work done");
         setIsWorkDoneClicked(true);
         setMakePayment(true);
-        // setWorkDoneInterval(5);
         setYourOTP(Math.floor(100000 + Math.random() * 900000).toString());
     }
 
     // Function to handle the cash payment
     const handleCashPayment = () => {
-        console.log("Cash Payment");
         setVerifyPayment(true);
-        setIsPaymentReceived(true)
-        setYourOTP(Math.floor(100000 + Math.random() * 900000).toString()); // Remove this line this is for testing purposes
-
+        setIsPaymentReceived(true);
+        setYourOTP(Math.floor(100000 + Math.random() * 900000).toString());
     }
 
     // Function to handle the UPI payment
     const handleUPIPayment = async () => {
-        console.log("UPI payment");
         if (amount > 0) {
-            setVerifyPayment(true);
-            setIsPaymentReceived(true)
+            if (!socket || !isConnected) {
+                toast.error("Not connected to server. Please wait...", {
+                    position: 'top-right',
+                });
+                return;
+            }
+            socket.emit('request-payment', { bookingId: incomingBooking?.bookingId ?? "", amount });
+            toast.success("Payment request sent successfully", { position: 'top-right' });
         } else {
             toast.error("Amount must be at least ₹100", {
                 position: 'top-right',
@@ -512,11 +470,9 @@ export default function WorkerDashboard() {
         }
     }
 
-
-    // Function to handle the payment verification 
+    // Function to handle the payment verification
     const handlePaymentVerification = async () => {
-        console.log("OTP: ", paymentVerificationOTP)
-        await isWorkCompleted(incomingBooking?.bookingId ?? "", true)
+        await isWorkCompleted(incomingBooking?.bookingId ?? "", true);
     }
 
     // Function to reverse geocode coordinates to address and set to the current address state
@@ -665,39 +621,33 @@ export default function WorkerDashboard() {
         const newStatus = !isActive;
         try {
             if (latitude && longitude) {
-                console.log("latitude", latitude, "longitude", longitude);
                 const response = await updateWorkerStatus(newStatus, latitude, longitude);
 
-
                 if (response.success) {
-                    setIsActive(newStatus);
+                    setAvailability(newStatus);
                     if (newStatus) {
-
-                        // Register with tracking server after successful status update
                         if (socket && socket.connected) {
                             socket.emit("register-active-worker", session?.user?._id);
-                            toast.success("You are now available for bookings", { position: 'top-right' })
+                            toast.success("You are now available for bookings", { position: 'top-right' });
                         } else if (socket && !socket.connected) {
-                            // Wait for socket to connect before emitting
                             socket.once('connect', () => {
                                 socket.emit("register-active-worker", session?.user?._id);
-                                toast.success("You are now available for bookings", { position: 'top-right' })
+                                toast.success("You are now available for bookings", { position: 'top-right' });
                             });
                         }
                     } else {
-                        // Unregister from tracking server when becoming inactive
                         if (socket && socket.connected && session?.user?._id) {
                             socket.emit("unregister-active-worker", session?.user?._id);
-                            toast.success("You are now unavailable for bookings", { position: 'top-right' })
+                            toast.success("You are now unavailable for bookings", { position: 'top-right' });
                         }
                     }
                 } else {
-                    setIsActive(!newStatus);
-                    toast.error(response?.message || "Something went wrong")
+                    setAvailability(!newStatus);
+                    toast.error(response?.message || "Something went wrong");
                 }
             }
         } catch (error: unknown) {
-            setIsActive(prev => !prev);
+            setAvailability(!newStatus);
             console.log(error instanceof Error ? error.message : "Internal Server Error on handleAvailabilityToggle");
             toast.error("Something went wrong", {
                 position: 'top-right',
@@ -778,8 +728,6 @@ export default function WorkerDashboard() {
                 {
                     incomingBooking && (
                         <Card className=" mx-auto">
-                            {/* <CardHeader> */}
-                            {/* </CardHeader> */}
                             <CardContent className="flex md:flex-row flex-col items-center justify-between gap-2">
                                 <div>
                                     <CardTitle>
@@ -829,15 +777,6 @@ export default function WorkerDashboard() {
                                             onChange={(e) => setAmount(Number(e.target.value))}
                                             min={100}
                                         />
-
-                                        {/* <Input
-                                            type="number"
-                                            placeholder="Enter OTP"
-                                            className={`w-full ${isPaymentReceived ? '': 'hidden'}`}
-                                            value={paymentVerificationOTP ?? ''}
-                                            onChange={(e)=> setPaymentVerificationOTP(Number(e.target.value))}
-                                            maxLength={6}
-                                        /> */}
 
                                         <InputOTP
                                             id="paymentVerificationOTP"
