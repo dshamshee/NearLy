@@ -1,7 +1,7 @@
 'use server'
 import Razorpay from "razorpay"
 
-export const createRazorpayOrder = async ()=>{
+export const createRazorpayOrder = async (amount: number)=>{
 
     try {
         const razorpayInstance = new Razorpay({
@@ -10,7 +10,7 @@ export const createRazorpayOrder = async ()=>{
         })
 
         const options = {
-            amount: 100,
+            amount: amount * 100,
             currency: "INR",
             receipt: `bookingID_${Date.now()}`,
             payment_capture: 1,
