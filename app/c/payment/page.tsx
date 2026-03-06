@@ -34,6 +34,11 @@ export default function Payment() {
             <h1>Payment</h1>
             <h1>Payment</h1>
             <h1>Payment</h1>
+            <h1>Payment</h1>
+            <h1>Payment</h1>
+            <h1>Payment</h1>
+            <h1>Payment</h1>
+            <h1>Payment</h1>
         </div>
     )
 }
