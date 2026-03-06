@@ -17,10 +17,13 @@ import {
 import { AlertTriangleIcon } from "lucide-react";
 import Link from "next/link";
 import { Button } from "./ui/button";
+import { useSearchParams } from "next/navigation";
 
 export const WorkerAvailability = () => {
     const { data: session } = useSession();
     const { socket, isConnected } = useSocket();
+    const searchParams = useSearchParams();
+
     // Zustand store state and actions
     const { isActive, setAvailability, location } = useWorkerStore();
     
@@ -113,6 +116,18 @@ export const WorkerAvailability = () => {
 
         return () => clearTimeout(timeoutId);
     }, [socket, isConnected, session?.user?._id, session?.user?.role, isActive]) // Use stable primitives instead of session object to avoid re-runs on tab switch
+
+
+        // Show login success toast when redirected from login
+        useEffect(() => {
+            if (searchParams.get("login") === "success" && typeof window !== "undefined") {
+                toast.success("Login Successful");
+                const url = new URL(window.location.href);
+                url.searchParams.delete("login");
+                window.history.replaceState({}, "", url.pathname + (url.search || ""));
+            }
+    
+        }, [searchParams]);
 
     // Function to toggle the availability status of the worker
     const handleAvailabilityToggle = async () => {
