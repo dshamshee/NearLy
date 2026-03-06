@@ -157,11 +157,11 @@ export default function CustomerDashboard() {
         }
 
         const handlePaymentRequested = (data: {amount: number})=>{
-            toast.success("Payment requested successfully", {
+            toast.success("Worker has requested for payment", {
                 position: 'top-right',
             });
             setRequestedPaymentAmount(data.amount);
-            // console.log("Payment Requested: ", data);
+            console.log("Payment Requested: ", data);
         }
 
         const handlePaymentError = (error: {message: string})=>{
@@ -469,7 +469,7 @@ export default function CustomerDashboard() {
                 )
             }
 
-            <Link href="/c/payment">Make Payment</Link>
+            {/* <Link href="/c/payment">Make Payment</Link> */}
         </div>
     )
 }
