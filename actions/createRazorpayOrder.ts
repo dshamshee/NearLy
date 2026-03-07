@@ -1,13 +1,15 @@
 'use server'
 import Razorpay from "razorpay"
 
+export const razorpayInstance = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID as string,
+    key_secret: process.env.RAZORPAY_KEY_SECRET as string,
+})
+
 export const createRazorpayOrder = async (amount: number)=>{
 
     try {
-        const razorpayInstance = new Razorpay({
-            key_id: process.env.RAZORPAY_KEY_ID as string,
-            key_secret: process.env.RAZORPAY_KEY_SECRET as string,
-        })
+
 
         const options = {
             amount: amount * 100,

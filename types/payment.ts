@@ -8,6 +8,6 @@ export interface Payment {
     method: "PAYPAL" | "CREDIT_CARD" | "DEBIT_CARD" | "UPI" | "CASH";
     status: "PENDING" | "COMPLETED" | "FAILED";
     currency: string;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt?: Date;
+    updatedAt?: Date;
 }
