@@ -4,11 +4,10 @@ import { Map } from "@/components/map";
 import { NearbyWorkers } from "@/components/nearbyWorkers";
 import { RecentProfessionals } from "@/components/recentProfessionals";
 import { Searching } from "@/components/searching";
-import { Worker } from "@/types/worker";
-import { zodSearchingType } from "@/zod/searching";
-import { useSession } from "next-auth/react";
+import { useCustomerStore } from "@/store/useCustomerStore";
+import type { CustomerNearbyWorker } from "@/store/useCustomerStore";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner"
 import { useSocket } from "@/utils/socketContext";
@@ -26,38 +25,40 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { createBooking } from "@/actions/createBooking";
-import Link from "next/link";
 
-
-export interface NearbyWorkerType extends Omit<Worker, 'userId'> {
-    _id: string;
-    userId: {
-        _id: string;
-        name: string;
-        email: string;
-        avatar: string;
-    }
-}
+export type NearbyWorkerType = CustomerNearbyWorker;
 
 
 export default function CustomerDashboard() {
-    const [mapLoaded, setMapLoaded] = useState<boolean>(false);
-    const [bookingDetails, setBookingDetails] = useState<zodSearchingType | null>(null);
-    const [nearbyWorkers, setNearbyWorkers] = useState<NearbyWorkerType[] | null>(null);
-    const [fetchingNearbyWorkers, setFetchingNearbyWorkers] = useState<boolean>(false);
-    const [trackingBookingId, setTrackingBookingId] = useState<string | null>(null);
-    const [isBookingsent, setIsBookingsent] = useState<boolean>(false);
+    const {
+        mapLoaded,
+        setMapLoaded,
+        bookingDetails,
+        setBookingDetails,
+        nearbyWorkers,
+        setNearbyWorkers,
+        fetchingNearbyWorkers,
+        setFetchingNearbyWorkers,
+        trackingBookingId,
+        setTrackingBookingId,
+        isBookingsent,
+        setIsBookingsent,
+        isBookingAccepted,
+        setIsBookingAccepted,
+        isBookingRejected,
+        setIsBookingRejected,
+        isWorkerArrived,
+        setIsWorkerArrived,
+        isWorkerOnTheWay,
+        setIsWorkerOnTheWay,
+        setIsServiceStarted,
+        workerCurrentLocation,
+        setWorkerCurrentLocation,
+        setRequestedPaymentAmount,
+        increasePrice,
+        resetAfterRejection,
+    } = useCustomerStore();
 
-
-    const [isBookingAccepted, setIsBookingAccepted] = useState<boolean>(false);
-    const [isBookingRejected, setIsBookingRejected] = useState<boolean>(false);
-    const [isWorkerArrived, setIsWorkerArrived] = useState<boolean>(false);
-    const [isWorkerOnTheWay, setIsWorkerOnTheWay] = useState<boolean>(false);
-    const [isServiceStarted, setIsServiceStarted] = useState<boolean>(false);
-    const [workerCurrentLocation, setWorkerCurrentLocation] = useState<{ latitude: number, longitude: number } | null>(null);
-    const [requestedPaymentAmount, setRequestedPaymentAmount] = useState<number>(0);
-
-    const { data: session } = useSession();
     const searchParams = useSearchParams();
     const { socket, isConnected } = useSocket();
 
@@ -156,7 +157,7 @@ export default function CustomerDashboard() {
             setMapLoaded(true);
         }
 
-        const handlePaymentRequested = (data: {amount: number})=>{
+        const handlePaymentRequested = (data: { amount: number }) => {
             toast.success("Worker has requested for payment", {
                 position: 'top-right',
             });
@@ -164,7 +165,7 @@ export default function CustomerDashboard() {
             console.log("Payment Requested: ", data);
         }
 
-        const handlePaymentError = (error: {message: string})=>{
+        const handlePaymentError = (error: { message: string }) => {
             toast.error(error.message || "Something went wrong", {
                 position: 'top-right',
             });
@@ -272,7 +273,7 @@ export default function CustomerDashboard() {
 
 
     // Function to send a booking request to a worker
-    const sendBookingRequest = async(workerId: string) => {
+    const sendBookingRequest = async (workerId: string) => {
         if (!socket || !isConnected) {
             toast.error("Not connected to server. Please wait...");
             return;
@@ -311,21 +312,9 @@ export default function CustomerDashboard() {
         console.log("Booking request sent:", { bookingId: newBooking.bookingId?.toString() ?? null, selectedWorkerId: workerId });
     }
 
-    const handleIncreasePrice = ()=>{
-        if (!bookingDetails) return;
-        setBookingDetails((prev) => ({
-            ...prev,
-            priceRange: (prev?.priceRange ?? 0) + 100
-        } as zodSearchingType)
-        )
+    const handleIncreasePrice = () => increasePrice();
 
-        setIsBookingsent(false);
-    }
-
-    const handleCancelIncreasePrice = ()=>{
-        setIsBookingRejected(false);
-        setIsBookingsent(false);
-    }
+    const handleCancelIncreasePrice = () => resetAfterRejection();
 
 
     return (
@@ -359,42 +348,43 @@ export default function CustomerDashboard() {
 
 
             {
+                // Modal for increasing price when booking is rejected
                 isBookingRejected && !isBookingsent && (
                     <div className="mb-3 flex justify-center">
                         <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <div className="relative inline-flex">
-                            <svg className="absolute inset-0 w-full h-full rounded-md overflow-visible">
-                                <rect
-                                    x="0" y="0"
-                                    width="100%" height="100%"
-                                    rx="8" ry="8"
-                                    fill="none"
-                                    stroke="#3b82f6"
-                                    strokeWidth="3"
-                                    pathLength="1"
-                                    strokeDasharray="0.08 0.92"
-                                    strokeLinecap="round"
-                                    style={{ strokeDashoffset: 1, animation: 'border-rotate 3s linear infinite' }}
-                                />
-                            </svg>
-                            <Button variant="outline" className="cursor-pointer px-14 shadow-md border-0 bg-background relative z-10 rounded-md hover:bg-accent">Increase</Button>
-                        </div>
+                            <AlertDialogTrigger asChild>
+                                <div className="relative inline-flex">
+                                    <svg className="absolute inset-0 w-full h-full rounded-md overflow-visible">
+                                        <rect
+                                            x="0" y="0"
+                                            width="100%" height="100%"
+                                            rx="8" ry="8"
+                                            fill="none"
+                                            stroke="#3b82f6"
+                                            strokeWidth="3"
+                                            pathLength="1"
+                                            strokeDasharray="0.08 0.92"
+                                            strokeLinecap="round"
+                                            style={{ strokeDashoffset: 1, animation: 'border-rotate 3s linear infinite' }}
+                                        />
+                                    </svg>
+                                    <Button variant="outline" className="cursor-pointer px-14 shadow-md border-0 bg-background relative z-10 rounded-md hover:bg-accent">Increase</Button>
+                                </div>
 
-                    </AlertDialogTrigger>
-                    <AlertDialogContent size="sm">
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Booking Rejected</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                The worker has rejected your booking request. Please increase the price range and try again.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel onClick={handleCancelIncreasePrice}>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleIncreasePrice}>Increase by 100 Rs</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent size="sm">
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Booking Rejected</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        The worker has rejected your booking request. Please increase the price range and try again.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel onClick={handleCancelIncreasePrice}>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleIncreasePrice}>Increase by 100 Rs</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </div>
                 )
             }
