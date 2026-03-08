@@ -18,7 +18,7 @@ export default function WorkerDashboardLayout({
 
       {children}
       <WorkerAvailability />
-      <IncomingBookingCard />
+      <IncomingBookingCard type="worker" />
       <WorkerPaymentCard />
       <WorkerMap />
       <WorkerStatsCard />

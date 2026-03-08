@@ -10,7 +10,7 @@ import { useSocket } from "@/utils/socketContext";
 import { useSession } from "next-auth/react";
 
 
-export const IncomingBookingCard = () => {
+export const IncomingBookingCard = ({ type }: { type: "worker" | "customer" }) => {
 
     const { socket, isConnected } = useSocket();
 
@@ -418,11 +418,21 @@ export const IncomingBookingCard = () => {
                                 </CardDescription>
                             </div>
                             <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
-                                <Button disabled={isBookingAccepted} className="cursor-pointer text-red-500" variant="outline" onClick={() => handleRejectBooking(incomingBooking.bookingId)}>Reject</Button>
-                                <Button disabled={isBookingAccepted} className="cursor-pointer text-green-500" variant="outline" onClick={() => handleAcceptBooking(incomingBooking.bookingId)}>Accept</Button>
-                                <Button disabled={!isBookingAccepted || outForService} className="cursor-pointer text-blue-500" variant="outline" onClick={() => handleOutForService(incomingBooking.bookingId)}>Out for Service</Button>
-                                <Button disabled={!outForService || !arrivedNearby || arrivedAtDestination} className="cursor-pointer text-green-500" variant="outline" onClick={handleStartWorking}>Arrived</Button>
-                                <Button disabled={workDoneInterval !== 0 || !arrivedAtDestination || isWorkDoneClicked} className="cursor-pointer text-green-500" variant="outline" onClick={handleWorkDone}>{workDoneInterval !== 0 ? `${workDoneInterval} sec` : "Done"}</Button>
+                                {
+                                    type === "worker" ? (
+                                        <>
+                                            <Button disabled={isBookingAccepted} className="cursor-pointer text-red-500" variant="outline" onClick={() => handleRejectBooking(incomingBooking.bookingId)}>Reject</Button>
+                                            <Button disabled={isBookingAccepted} className="cursor-pointer text-green-500" variant="outline" onClick={() => handleAcceptBooking(incomingBooking.bookingId)}>Accept</Button>
+                                            <Button disabled={!isBookingAccepted || outForService} className="cursor-pointer text-blue-500" variant="outline" onClick={() => handleOutForService(incomingBooking.bookingId)}>Out for Service</Button>
+                                            <Button disabled={!outForService || !arrivedNearby || arrivedAtDestination} className="cursor-pointer text-green-500" variant="outline" onClick={handleStartWorking}>Arrived</Button>
+                                            <Button disabled={workDoneInterval !== 0 || !arrivedAtDestination || isWorkDoneClicked} className="cursor-pointer text-green-500" variant="outline" onClick={handleWorkDone}>{workDoneInterval !== 0 ? `${workDoneInterval} sec` : "Done"}</Button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Button>Customer Buttons</Button>
+                                        </>
+                                    )
+                                }
                             </div>
                         </CardContent>
                     </Card>

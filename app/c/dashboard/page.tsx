@@ -25,6 +25,8 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { createBooking } from "@/actions/createBooking";
+import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { IncomingBookingCard } from "@/components/incomingBookingCard";
 
 export type NearbyWorkerType = CustomerNearbyWorker;
 
@@ -414,28 +416,51 @@ export default function CustomerDashboard() {
                             />)
                     })}
                 </div>
-            ) : isBookingRejected ? (
-                <div className="flex flex-col items-center justify-center gap-4 py-8">
-                    <h1 className="text-xl font-semibold text-red-600">Booking rejected by worker, please increase the price range and try again</h1>
-                </div>
-            ) : isBookingsent && !isBookingAccepted ? (
-                <div className="flex flex-col items-center justify-center gap-4 py-8">
-                    <h1 className="text-xl font-semibold">Wait for the worker to accept the booking</h1>
-                    <Spinner className="size-6" data-icon="inline-start" />
-                </div>
-            ) : isBookingAccepted && !isWorkerOnTheWay ? (
-                <div className="flex flex-col items-center justify-center gap-4 py-8">
-                    <h1 className="text-xl font-semibold text-green-600">Booking confirmed! Worker has accepted your request.</h1>
-                </div>
-            ) : isWorkerOnTheWay && !isWorkerArrived ? (
-                <div className="flex flex-col items-center justify-center gap-4 py-8">
-                    <h1 className="text-xl font-semibold text-green-600">Worker is on the way, please wait for them to arrive.</h1>
-                </div>
-            ) : isBookingRejected ? (
-                <div className="flex flex-col items-center justify-center gap-4 py-8">
-                    <h1 className="text-xl font-semibold text-red-600">Booking rejected by worker, please increase the price range and try again.</h1>
-                </div>
-            ) : null
+            ) : (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Booking Details</CardTitle>
+                    </CardHeader>
+
+                    <CardContent className="flex md:flex-row flex-col items-center justify-between gap-2">
+                        <CardDescription >
+                            <p>Profession: {bookingDetails?.workNeededProfession}</p>
+                            <p>Description: {bookingDetails?.workNeededDescription}</p>
+                            <p>Price Range: ₹{bookingDetails?.priceRange}</p>
+                            <p>Distance from you: 5KM</p>
+                        </CardDescription>
+
+
+                        <CardAction>
+                            <Button className="cursor-pointer text-green-500" variant="outline">Make Payment</Button>
+                        </CardAction>
+                    </CardContent>
+                    <CardFooter className="flex flex-col items-center justify-center gap-4">
+                        {isBookingRejected ? (
+                            <div className="flex flex-col items-center justify-center gap-4">
+                                <h1 className="text-xl font-semibold text-red-600">Booking rejected by worker, please increase the price range and try again</h1>
+                            </div>
+                        ) : isBookingsent && !isBookingAccepted ? (
+                            <div className="flex flex-col items-center justify-center gap-4">
+                                <h1 className="text-xl font-semibold">Wait for the worker to accept the booking</h1>
+                                <Spinner className="size-6" data-icon="inline-start" />
+                            </div>
+                        ) : isBookingAccepted && !isWorkerOnTheWay ? (
+                            <div className="flex flex-col items-center justify-center gap-4">
+                                <h1 className="text-xl font-semibold text-green-600">Booking confirmed! Worker has accepted your request.</h1>
+                            </div>
+                        ) : isWorkerOnTheWay && !isWorkerArrived ? (
+                            <div className="flex flex-col items-center justify-center gap-4">
+                                <h1 className="text-xl font-semibold text-green-600">Worker is on the way, please wait for them to arrive.</h1>
+                            </div>
+                        ) : isBookingRejected ? (
+                            <div className="flex flex-col items-center justify-center gap-4">
+                                <h1 className="text-xl font-semibold text-red-600">Booking rejected by worker, please increase the price range and try again.</h1>
+                            </div>
+                        ) : null}
+                    </CardFooter>
+                </Card>
+            )
             }
 
             {!nearbyWorkers && !fetchingNearbyWorkers && (
