@@ -92,12 +92,12 @@ export const IncomingBookingCard = ({ type }: { type: "worker" | "customer" }) =
     }, [])
 
     // Stop location sharing when worker arrives at destination
-    useEffect(() => {
-        if (arrivedAtDestination && locationIntervalRef.current) {
-            clearInterval(locationIntervalRef.current);
-            locationIntervalRef.current = null;
-        }
-    }, [arrivedAtDestination])
+    // useEffect(() => {
+    //     if (arrivedAtDestination && locationIntervalRef.current) {
+    //         clearInterval(locationIntervalRef.current);
+    //         locationIntervalRef.current = null;
+    //     }
+    // }, [arrivedAtDestination])
 
 
     // Function to reverse geocode coordinates to address and set to the current address state
