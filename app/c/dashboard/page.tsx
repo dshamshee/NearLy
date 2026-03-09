@@ -7,7 +7,7 @@ import { Searching } from "@/components/searching";
 import { useCustomerStore } from "@/store/useCustomerStore";
 import type { CustomerNearbyWorker } from "@/store/useCustomerStore";
 import Image from "next/image";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner"
 import { useSocket } from "@/utils/socketContext";
@@ -25,8 +25,8 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { createBooking } from "@/actions/createBooking";
-import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { IncomingBookingCard } from "@/components/incomingBookingCard";
+import { CustomerBookingCard } from "@/components/customerBookingCard";
+
 
 export type NearbyWorkerType = CustomerNearbyWorker;
 
@@ -200,6 +200,7 @@ export default function CustomerDashboard() {
         };
     }, [socket]);
 
+
     // Update customer socket ID when reconnecting with a pending booking
     useEffect(() => {
         if (!socket || !isConnected || !trackingBookingId || isBookingAccepted) return;
@@ -236,6 +237,7 @@ export default function CustomerDashboard() {
         }
         return 0;
     }
+
 
 
 
@@ -323,75 +325,83 @@ export default function CustomerDashboard() {
         <div className="mainContainer min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
 
             <div className="hero w-full flex md:flex-row flex-col items-center justify-between gap-10 md:px-16 py-5">
-                <div className={`text text-center ${mapLoaded ? 'hidden' : 'block'}`}>
-                    <h1 className="text-4xl font-bold text-foreground">Don&apos;t wait, get help now!</h1>
-                    <p className="text-lg text-gray-500">Get instant access to skilled professionals in your neighborhood.</p>
+                {
+                    !isBookingsent && (
+                        <>
+                            <div className={`text text-center`}>
+                                <h1 className="text-4xl font-bold text-foreground">Don&apos;t wait, get help now!</h1>
+                                <p className="text-lg text-gray-500">Get instant access to skilled professionals in your neighborhood.</p>
 
-                    <div className="search mt-4 ">
-                        <Searching
-                            setBookingDetails={(data) => setBookingDetails(data)}
-                            setMapLoaded={setMapLoaded}
-                        />
-                    </div>
-
-
-                </div>
-                <div className={`${mapLoaded ? 'hidden' : 'block'}`}>
-                    <div className={`illustration relative md:flex items-center justify-center hidden`}>
-                        <Image src={'/CustIllustration2.svg'} alt="Dashboard" width={600} height={600} className="relative z-0" />
-                        <Image src={'/CustIllustration1.svg'} alt="Dashboard" width={150} height={150} className="absolute z-20 top-1/7 left-1/5 -translate-x-1/2 -translate-y-1/2" />
-                    </div>
-                </div>
-                <div className={`mapSection w-full h-full ${mapLoaded ? 'block' : 'hidden'}`}>
-                    <Map workerLat={workerCurrentLocation?.latitude ?? 0} workerLng={workerCurrentLocation?.longitude ?? 0} custLat={bookingDetails?.custLocation.latitude ?? 0} custLng={bookingDetails?.custLocation.longitude ?? 0} />
-                </div>
-
-            </div>
-
-
-            {
-                // Modal for increasing price when booking is rejected
-                isBookingRejected && !isBookingsent && (
-                    <div className="mb-3 flex justify-center">
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <div className="relative inline-flex">
-                                    <svg className="absolute inset-0 w-full h-full rounded-md overflow-visible">
-                                        <rect
-                                            x="0" y="0"
-                                            width="100%" height="100%"
-                                            rx="8" ry="8"
-                                            fill="none"
-                                            stroke="#3b82f6"
-                                            strokeWidth="3"
-                                            pathLength="1"
-                                            strokeDasharray="0.08 0.92"
-                                            strokeLinecap="round"
-                                            style={{ strokeDashoffset: 1, animation: 'border-rotate 3s linear infinite' }}
-                                        />
-                                    </svg>
-                                    <Button variant="outline" className="cursor-pointer px-14 shadow-md border-0 bg-background relative z-10 rounded-md hover:bg-accent">Increase</Button>
+                                <div className="search mt-4 ">
+                                    <Searching
+                                        setBookingDetails={(data) => setBookingDetails(data)}
+                                        setMapLoaded={setMapLoaded}
+                                    />
                                 </div>
 
-                            </AlertDialogTrigger>
-                            <AlertDialogContent size="sm">
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Booking Rejected</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        The worker has rejected your booking request. Please increase the price range and try again.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel onClick={handleCancelIncreasePrice}>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleIncreasePrice}>Increase by 100 Rs</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    </div>
-                )
+
+                            </div>
+                            <div>
+                                <div className={`illustration relative md:flex items-center justify-center hidden`}>
+                                    <Image src={'/CustIllustration2.svg'} alt="Dashboard" width={600} height={600} className="relative z-0" />
+                                    <Image src={'/CustIllustration1.svg'} alt="Dashboard" width={150} height={150} className="absolute z-20 top-1/7 left-1/5 -translate-x-1/2 -translate-y-1/2" />
+                                </div>
+                            </div>
+                        </>
+                    )
+                }
+                {
+                    isBookingsent && mapLoaded && (
+                        <div className={`mapSection w-full h-full`}>
+                            <Map workerLat={workerCurrentLocation?.latitude ?? 0} workerLng={workerCurrentLocation?.longitude ?? 0} custLat={bookingDetails?.custLocation.latitude ?? 0} custLng={bookingDetails?.custLocation.longitude ?? 0} />
+                        </div>
+                    )
+                }
+            </div>
+
+            {/* Modal for increasing price when booking is rejected */}
+            {isBookingRejected && !isBookingsent && (
+                <div className="mb-3 flex justify-center">
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <div className="relative inline-flex">
+                                <svg className="absolute inset-0 w-full h-full rounded-md overflow-visible">
+                                    <rect
+                                        x="0" y="0"
+                                        width="100%" height="100%"
+                                        rx="8" ry="8"
+                                        fill="none"
+                                        stroke="#3b82f6"
+                                        strokeWidth="3"
+                                        pathLength="1"
+                                        strokeDasharray="0.08 0.92"
+                                        strokeLinecap="round"
+                                        style={{ strokeDashoffset: 1, animation: 'border-rotate 3s linear infinite' }}
+                                    />
+                                </svg>
+                                <Button variant="outline" className="cursor-pointer px-14 shadow-md border-0 bg-background relative z-10 rounded-md hover:bg-accent">Increase</Button>
+                            </div>
+
+                        </AlertDialogTrigger>
+                        <AlertDialogContent size="sm">
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Booking Rejected</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    The worker has rejected your booking request. Please increase the price range and try again.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel onClick={handleCancelIncreasePrice}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleIncreasePrice}>Increase by 100 Rs</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+            )
             }
 
-            {nearbyWorkers && nearbyWorkers.length > 0 && !isBookingsent ? (
+            {/* Nearby Worker Cards */}
+            {nearbyWorkers && nearbyWorkers.length > 0 && !isBookingsent && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{
                     nearbyWorkers.map((worker) => {
                         const distance = calculateDistance(
@@ -416,54 +426,16 @@ export default function CustomerDashboard() {
                             />)
                     })}
                 </div>
-            ) : (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Booking Details</CardTitle>
-                    </CardHeader>
+            )}
 
-                    <CardContent className="flex md:flex-row flex-col items-center justify-between gap-2">
-                        <CardDescription >
-                            <p>Profession: {bookingDetails?.workNeededProfession}</p>
-                            <p>Description: {bookingDetails?.workNeededDescription}</p>
-                            <p>Price Range: ₹{bookingDetails?.priceRange}</p>
-                            <p>Distance from you: 5KM</p>
-                        </CardDescription>
-
-
-                        <CardAction>
-                            <Button className="cursor-pointer text-green-500" variant="outline">Make Payment</Button>
-                        </CardAction>
-                    </CardContent>
-                    <CardFooter className="flex flex-col items-center justify-center gap-4">
-                        {isBookingRejected ? (
-                            <div className="flex flex-col items-center justify-center gap-4">
-                                <h1 className="text-xl font-semibold text-red-600">Booking rejected by worker, please increase the price range and try again</h1>
-                            </div>
-                        ) : isBookingsent && !isBookingAccepted ? (
-                            <div className="flex flex-col items-center justify-center gap-4">
-                                <h1 className="text-xl font-semibold">Wait for the worker to accept the booking</h1>
-                                <Spinner className="size-6" data-icon="inline-start" />
-                            </div>
-                        ) : isBookingAccepted && !isWorkerOnTheWay ? (
-                            <div className="flex flex-col items-center justify-center gap-4">
-                                <h1 className="text-xl font-semibold text-green-600">Booking confirmed! Worker has accepted your request.</h1>
-                            </div>
-                        ) : isWorkerOnTheWay && !isWorkerArrived ? (
-                            <div className="flex flex-col items-center justify-center gap-4">
-                                <h1 className="text-xl font-semibold text-green-600">Worker is on the way, please wait for them to arrive.</h1>
-                            </div>
-                        ) : isBookingRejected ? (
-                            <div className="flex flex-col items-center justify-center gap-4">
-                                <h1 className="text-xl font-semibold text-red-600">Booking rejected by worker, please increase the price range and try again.</h1>
-                            </div>
-                        ) : null}
-                    </CardFooter>
-                </Card>
-            )
+            { // Customer Booking Card
+                isBookingsent && (
+                    <CustomerBookingCard />
+                )
             }
 
-            {!nearbyWorkers && !fetchingNearbyWorkers && (
+            {/* Recent Professionals */}
+            {!mapLoaded && (
                 <div className="recentProfessionals mt-10">
                     <h2 className="md:text-2xl text-xl font-bold text-foreground mb-2">Recent Professionals</h2>
                     <div className="recentProfessionalsList grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -483,8 +455,6 @@ export default function CustomerDashboard() {
                     </div>
                 )
             }
-
-            {/* <Link href="/c/payment">Make Payment</Link> */}
         </div>
     )
 }

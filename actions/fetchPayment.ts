@@ -1,6 +1,6 @@
 'use server'
 
-import { razorpayInstance } from "./createRazorpayOrder";
+import { razorpayInstance } from "@/lib/razorpay";
 import PaymentModel from "@/models/payment";
 import mongoose from "mongoose";
 
