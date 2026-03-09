@@ -1,7 +1,11 @@
 'use server'
 import { razorpayInstance } from "@/lib/razorpay"
 
-export const createRazorpayOrder = async (amount: number)=>{
+type CreateOrderSuccess = { success: true; data: { id: string; amount: number }; message: string; statusCode: number }
+type CreateOrderError = { success: false; message: string; statusCode: number; error?: string }
+type CreateOrderResult = CreateOrderSuccess | CreateOrderError
+
+export const createRazorpayOrder = async (amount: number): Promise<CreateOrderResult> =>{
 
     try {
         const options = {
@@ -22,10 +26,13 @@ export const createRazorpayOrder = async (amount: number)=>{
         }
 
         return {
-            sucess: true,
+            success: true,
             message: "Razorpay order created successfully",
             statusCode: 200,
-            data: order,
+            data: {
+                id: order.id,
+                amount: Number(order.amount),
+            },
         };
     } catch (error: unknown) {
         console.log("Error in createRazorpayOrder", error);
