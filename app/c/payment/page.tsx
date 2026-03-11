@@ -8,7 +8,6 @@ import { Suspense, useEffect } from "react"
 import { toast } from "sonner"
 import { useCustomerStore } from "@/store/useCustomerStore"
 import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
 import { Skeleton } from "@/components/ui/skeleton"
 import axios from "axios"
 
@@ -18,7 +17,6 @@ function PaymentContent() {
   const amount = useSearchParams().get('amount')
   const { trackingBookingId } = useCustomerStore()
   const { data: session } = useSession();
-  const router = useRouter();
 
 
   // Load the Razorpay SDK
@@ -85,8 +83,7 @@ function PaymentContent() {
 
         if (paymentResponse.data.success) {
           toast.success(paymentResponse.data.message);
-          router.push("/c/dashboard")
-          window.location.reload();
+          window.location.replace("/c/dashboard");
         } else {
           toast.error(paymentResponse.data.message);
         }
