@@ -18,6 +18,8 @@ export const CustomerBookingCard = () => {
         isWorkerArrived,
         isWorkerOnTheWay,
         workerCurrentLocation,
+        requestedPaymentAmount,
+        trackingBookingId,
     } = useCustomerStore();
     const [distance, setDistance] = useState<number>(0);
 
@@ -53,8 +55,8 @@ export const CustomerBookingCard = () => {
 
 
                 <CardAction className="mt-5 w-full md:w-auto">
-                    <Button asChild className="cursor-pointer w-full md:w-auto" variant="outline">
-                        <Link href="/c/payment?amount=500" className="flex items-center justify-center gap-2" scroll={false}>
+                    <Button disabled={requestedPaymentAmount <= 0 || requestedPaymentAmount === null} asChild className={`cursor-pointer w-full md:w-auto ${requestedPaymentAmount <= 0 || requestedPaymentAmount === null ? 'opacity-50 cursor-not-allowed' : ''}`} variant="outline">
+                        <Link href={requestedPaymentAmount <= 0 || requestedPaymentAmount === null ? '#' : `/c/payment?amount=${requestedPaymentAmount}${trackingBookingId ? `&bookingId=${trackingBookingId}` : ''}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2" scroll={false}>
                             Make Payment
                             <ArrowRight className="size-4 inline-block" />
                         </Link>

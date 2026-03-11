@@ -1,22 +1,24 @@
 'use client'
 
 import { createRazorpayOrder } from "@/actions/createRazorpayOrder"
-import { Button } from "@/components/ui/button"
 import { useSearchParams } from "next/navigation"
-import Link from "next/link"
 import { Suspense, useEffect } from "react"
 import { toast } from "sonner"
 import { useCustomerStore } from "@/store/useCustomerStore"
 import { useSession } from "next-auth/react"
 import { Skeleton } from "@/components/ui/skeleton"
 import axios from "axios"
-
-
+import { useSocket } from "@/utils/socketContext"
 
 function PaymentContent() {
-  const amount = useSearchParams().get('amount')
-  const { trackingBookingId } = useCustomerStore()
+  const searchParams = useSearchParams();
+  const amount = searchParams.get('amount');
+  const bookingIdFromUrl = searchParams.get('bookingId');
+  const { trackingBookingId } = useCustomerStore();
+  // Use bookingId from URL (passed when opening in new tab) or from store
+  const bookingId = bookingIdFromUrl || trackingBookingId;
   const { data: session } = useSession();
+  const { socket } = useSocket();
 
 
   // Load the Razorpay SDK
@@ -31,6 +33,10 @@ function PaymentContent() {
   };
 
   const createOrder = async (amount: number) => {
+    if (!bookingId) {
+      toast.error("Booking ID missing. Please return to the dashboard and try again.");
+      return;
+    }
 
     try {
       // Send a request to the server action to create a Razorpay order
@@ -69,23 +75,22 @@ function PaymentContent() {
 
         // set the response in the database (pass string; server converts to ObjectId)
         const data = {
-          bookingId: trackingBookingId as string,
+          bookingId: bookingId as string,
           paymentId: response.razorpay_payment_id as string,
           orderId: response.razorpay_order_id as string,
         }
-        // const res = await fetch("/api/payment/details", {
-        //   method: "POST",
-        //   headers: { "Content-Type": "application/json" },
-        //   body: JSON.stringify(data),
-        // });
 
+        // set the payment details in the database 
         const paymentResponse = await axios.post("/api/payment/details", data);
 
         if (paymentResponse.data.success) {
-          toast.success(paymentResponse.data.message);
-          window.location.replace("/c/dashboard");
+          toast.success("Payment successful!");
+          socket?.emit("customer-razorpay-payment-result", { bookingId, success: true });
+          window.close();
         } else {
           toast.error(paymentResponse.data.message);
+          socket?.emit("customer-razorpay-payment-result", { bookingId, success: false });
+          window.close();
         }
 
       },
@@ -100,13 +105,16 @@ function PaymentContent() {
     };
 
     const rzp1 = new window.Razorpay(options);
+
+
     rzp1.open();
   };
 
   useEffect(() => {
-    createOrder(Number(amount));
-  }, [amount]);
-
+    if (amount && bookingId) {
+      createOrder(Number(amount));
+    }
+  }, [amount, bookingId]);
 
   return (
     <div className="flex flex-col items-center justify-center h-screen w-full">

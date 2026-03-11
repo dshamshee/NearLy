@@ -74,6 +74,29 @@ export default function CustomerDashboard() {
         }
     }, [searchParams]);
 
+    // Listen for payment success/failure from payment tab via socket
+    useEffect(() => {
+        if (!socket) return;
+        console.log("I am here")
+        const handlePaymentResult = (data: { bookingId?: string; success: boolean }) => {
+            if (data.success) {
+                toast.success("Payment successful, please share the OTP with the worker to complete the service", {
+                    position: "top-right",
+                });
+                if (data.bookingId) setTrackingBookingId(data.bookingId);
+            } else {
+                toast.error("Payment failed, please try again", {
+                    position: "top-right",
+                });
+                if (data.bookingId) setTrackingBookingId(data.bookingId);
+            }
+        };
+        socket.on("customer-payment-result", handlePaymentResult);
+        return () => {
+            socket.off("customer-payment-result", handlePaymentResult);
+        };
+    }, [socket, setTrackingBookingId]);
+
     // Listen for booking confirmation from worker
     useEffect(() => {
         if (!socket) return;
