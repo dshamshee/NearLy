@@ -8,17 +8,15 @@ import { useCustomerStore } from "@/store/useCustomerStore"
 import { useSession } from "next-auth/react"
 import { Skeleton } from "@/components/ui/skeleton"
 import axios from "axios"
-import { useSocket } from "@/utils/socketContext"
 
 function PaymentContent() {
   const searchParams = useSearchParams();
   const amount = searchParams.get('amount');
   const bookingIdFromUrl = searchParams.get('bookingId');
-  const { trackingBookingId } = useCustomerStore();
+  const { trackingBookingId, isPaymentReceived, setIsPaymentReceived } = useCustomerStore();
   // Use bookingId from URL (passed when opening in new tab) or from store
   const bookingId = bookingIdFromUrl || trackingBookingId;
   const { data: session } = useSession();
-  const { socket } = useSocket();
 
 
   // Load the Razorpay SDK
@@ -85,12 +83,19 @@ function PaymentContent() {
 
         if (paymentResponse.data.success) {
           toast.success("Payment successful!");
-          socket?.emit("customer-razorpay-payment-result", { bookingId, success: true });
-          window.close();
+          setIsPaymentReceived(true);
+          // API notifies dashboard via tracking server; delay close so user sees toast
+          setTimeout(() => window.close(), 500);
         } else {
           toast.error(paymentResponse.data.message);
-          socket?.emit("customer-razorpay-payment-result", { bookingId, success: false });
-          window.close();
+          // Notify dashboard of failure via tracking server
+          const trackingUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000";
+          fetch(`${trackingUrl.replace(/\/$/, "")}/notify-payment-result`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ bookingId, success: false }),
+          }).catch(() => {});
+          setTimeout(() => window.close(), 500);
         }
 
       },

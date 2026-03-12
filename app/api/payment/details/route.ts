@@ -83,6 +83,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Notify dashboard via tracking server (reliable - doesn't depend on payment tab socket)
+    const trackingUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000";
+    try {
+      await fetch(`${trackingUrl.replace(/\/$/, "")}/notify-payment-result`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingId, success: true }),
+      });
+    } catch (notifyErr) {
+      console.warn("Failed to notify tracking server:", notifyErr);
+    }
+
     return NextResponse.json<Response>({
       success: true,
       message: "Payment details saved successfully",

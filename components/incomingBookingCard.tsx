@@ -216,7 +216,7 @@ export const IncomingBookingCard = ({ type }: { type: "worker" | "customer" }) =
 
             console.log('Distance to destination:', distance, 'meters');
 
-            if (distance < 20) {
+            if (distance < 500) {
                 setArrivedNearby(true);
             }
         }

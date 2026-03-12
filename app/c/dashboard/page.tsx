@@ -77,8 +77,8 @@ export default function CustomerDashboard() {
     // Listen for payment success/failure from payment tab via socket
     useEffect(() => {
         if (!socket) return;
-        console.log("I am here")
         const handlePaymentResult = (data: { bookingId?: string; success: boolean }) => {
+            // console.log(data);
             if (data.success) {
                 toast.success("Payment successful, please share the OTP with the worker to complete the service", {
                     position: "top-right",
@@ -97,12 +97,11 @@ export default function CustomerDashboard() {
         };
     }, [socket, setTrackingBookingId]);
 
-    // Listen for booking confirmation from worker
+    // Listen for booking status updates from worker via socket
     useEffect(() => {
         if (!socket) return;
 
-        const handleBookingConfirmed = (data: { msg: string }) => {
-            console.log("Booking confirmed:", data);
+        const handleBookingConfirmed = (_data: { msg: string }) => {
             setIsBookingAccepted(true);
             toast.success("Worker accepted your booking!", {
                 position: 'top-right',
@@ -113,13 +112,10 @@ export default function CustomerDashboard() {
             const message = (typeof error === "object" && error !== null && "message" in error && typeof (error as { message: unknown }).message === "string")
                 ? (error as { message: string }).message
                 : "Booking request failed";
-            console.error("Booking error:", message, error);
             toast.error(message, {
                 position: 'top-right',
             });
-
-            setTimeout(() => { setIsBookingsent(false); }, 2000)
-
+            setTimeout(() => { setIsBookingsent(false); }, 2000);
         };
 
         const handleBookingRejected = (data: { msg: string }) => {
@@ -128,8 +124,8 @@ export default function CustomerDashboard() {
             });
             setIsBookingAccepted(false);
             setIsBookingRejected(true);
-            setTimeout(() => { setIsBookingsent(false); }, 3000)
-        }
+            setTimeout(() => { setIsBookingsent(false); }, 3000);
+        };
 
         const handleBookingRejectedError = (error: { message: string }) => {
             toast.error(error.message || "Something went wrong", {
@@ -137,32 +133,32 @@ export default function CustomerDashboard() {
             });
             setIsBookingAccepted(false);
             setIsBookingRejected(false);
-        }
+        };
 
         const handleWorkerStartedNavigation = () => {
             setIsWorkerOnTheWay(true);
             toast.success("Worker is on the way", {
                 position: 'top-right',
             });
-        }
+        };
 
         const handleStartNavigationError = (error: { message: string }) => {
             toast.error(error.message || "Something went wrong", {
                 position: 'top-right',
             });
             setIsWorkerOnTheWay(false);
-        }
+        };
 
-        const handleLocationBroadcast = (location: { latitude: number, longitude: number }) => {
+        const handleLocationBroadcast = (location: { latitude: number; longitude: number }) => {
             setWorkerCurrentLocation(location);
-        }
+        };
 
         const handleUpdateLocationError = (error: { message: string }) => {
             toast.error(error.message || "Something went wrong", {
                 position: 'top-right',
             });
             setWorkerCurrentLocation(null);
-        }
+        };
 
         const handleWorkerArrived = () => {
             setIsWorkerArrived(true);
@@ -171,7 +167,7 @@ export default function CustomerDashboard() {
             toast.success("Service has started", {
                 position: 'top-right',
             });
-        }
+        };
 
         const handleConfirmReachedError = (error: { message: string }) => {
             toast.error(error.message || "Something went wrong", {
@@ -180,29 +176,27 @@ export default function CustomerDashboard() {
             setIsWorkerArrived(false);
             setIsServiceStarted(false);
             setMapLoaded(true);
-        }
+        };
 
         const handlePaymentRequested = (data: { amount: number }) => {
             toast.success("Worker has requested for payment", {
                 position: 'top-right',
             });
             setRequestedPaymentAmount(data.amount);
-            console.log("Payment Requested: ", data);
-        }
+        };
 
         const handlePaymentError = (error: { message: string }) => {
             toast.error(error.message || "Something went wrong", {
                 position: 'top-right',
             });
-            // setIsPaymentReceived(false);
-        }
+        };
 
         socket.on("booking-confirmed", handleBookingConfirmed);
         socket.on("booking-request-error", handleBookingError);
         socket.on("booking-rejected", handleBookingRejected);
         socket.on("booking-rejected-error", handleBookingRejectedError);
         socket.on("worker-started-navigation", handleWorkerStartedNavigation);
-        socket.on('location-broadcast', handleLocationBroadcast);
+        socket.on("location-broadcast", handleLocationBroadcast);
         socket.on("worker-arrived", handleWorkerArrived);
         socket.on("start-navigation-error", handleStartNavigationError);
         socket.on("update-location-error", handleUpdateLocationError);
@@ -216,28 +210,29 @@ export default function CustomerDashboard() {
             socket.off("booking-rejected", handleBookingRejected);
             socket.off("booking-rejected-error", handleBookingRejectedError);
             socket.off("worker-started-navigation", handleWorkerStartedNavigation);
-            socket.off('location-broadcast', handleLocationBroadcast);
+            socket.off("location-broadcast", handleLocationBroadcast);
             socket.off("worker-arrived", handleWorkerArrived);
+            socket.off("start-navigation-error", handleStartNavigationError);
+            socket.off("update-location-error", handleUpdateLocationError);
+            socket.off("confirm-reached-error", handleConfirmReachedError);
             socket.off("payment-requested", handlePaymentRequested);
             socket.off("payment-error", handlePaymentError);
         };
     }, [socket]);
 
 
-    // Update customer socket ID when reconnecting with a pending booking
+    // Update customer socket ID when reconnecting (ensures worker updates reach customer after refresh)
     useEffect(() => {
-        if (!socket || !isConnected || !trackingBookingId || isBookingAccepted) return;
+        if (!socket || !isConnected || !trackingBookingId) return;
 
-        // Small delay to ensure socket is fully connected
         const timeoutId = setTimeout(() => {
             if (socket.connected && trackingBookingId) {
                 socket.emit("update-customer-socket", { bookingId: trackingBookingId });
-                console.log("Updated customer socket for booking:", trackingBookingId);
             }
         }, 500);
 
         return () => clearTimeout(timeoutId);
-    }, [socket, isConnected, trackingBookingId, isBookingAccepted]);
+    }, [socket, isConnected, trackingBookingId]);
 
     // Function to calculate the distance between two coordinates in meters
     const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {

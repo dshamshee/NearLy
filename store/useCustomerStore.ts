@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import type { zodSearchingType } from "@/zod/searching";
 
 // Minimal type for workers in store; dashboard can use its own extended type
@@ -68,7 +69,9 @@ interface CustomerState {
   resetBookingFlow: () => void;
 }
 
-export const useCustomerStore = create<CustomerState>((set, get) => ({
+export const useCustomerStore = create<CustomerState>()(
+  persist(
+    (set, get) => ({
   mapLoaded: false,
   setMapLoaded: (value) => set({ mapLoaded: value }),
 
@@ -145,4 +148,10 @@ export const useCustomerStore = create<CustomerState>((set, get) => ({
       workerCurrentLocation: null,
       requestedPaymentAmount: 0,
     }),
-}));
+}),
+    {
+      name: "customer-storage",
+      partialize: (state) => ({ isPaymentReceived: state.isPaymentReceived }),
+    }
+  )
+);
