@@ -26,12 +26,15 @@ import {
 } from "@/components/ui/alert-dialog"
 import { createBooking } from "@/actions/createBooking";
 import { CustomerBookingCard } from "@/components/customerBookingCard";
+import { generatePaymentOTP } from "@/actions/generatePaymentOTP";
 
 
 export type NearbyWorkerType = CustomerNearbyWorker;
 
 
 export default function CustomerDashboard() {
+
+    // Customer Store State and Actions
     const {
         mapLoaded,
         setMapLoaded,
@@ -45,13 +48,10 @@ export default function CustomerDashboard() {
         setTrackingBookingId,
         isBookingsent,
         setIsBookingsent,
-        isBookingAccepted,
         setIsBookingAccepted,
         isBookingRejected,
         setIsBookingRejected,
-        isWorkerArrived,
         setIsWorkerArrived,
-        isWorkerOnTheWay,
         setIsWorkerOnTheWay,
         setIsServiceStarted,
         workerCurrentLocation,
@@ -59,6 +59,7 @@ export default function CustomerDashboard() {
         setRequestedPaymentAmount,
         increasePrice,
         resetAfterRejection,
+        setYourOTP
     } = useCustomerStore();
 
     const searchParams = useSearchParams();
@@ -83,6 +84,12 @@ export default function CustomerDashboard() {
                 toast.success("Payment successful, please share the OTP with the worker to complete the service", {
                     position: "top-right",
                 });
+                (async()=>{
+                    const otp = await generatePaymentOTP("CUSTOMER", trackingBookingId as string);
+                    if(data.success){
+                        setYourOTP(otp.data as string);
+                    }else setYourOTP("OTP not generated")
+                })()
                 if (data.bookingId) setTrackingBookingId(data.bookingId);
             } else {
                 toast.error("Payment failed, please try again", {

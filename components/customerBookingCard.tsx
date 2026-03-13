@@ -20,6 +20,7 @@ export const CustomerBookingCard = () => {
         workerCurrentLocation,
         requestedPaymentAmount,
         trackingBookingId,
+        yourOTP,
     } = useCustomerStore();
     const [distance, setDistance] = useState<number>(0);
 
@@ -86,6 +87,15 @@ export const CustomerBookingCard = () => {
                         <h1 className="text-xl font-semibold text-red-600">Booking rejected by worker, please increase the price range and try again.</h1>
                     </div>
                 ) : null}
+
+                {
+                    yourOTP && (
+                        <div className="flex flex-col items-center justify-center gap-2">
+                            <h1 className="text-2xl font-semibold">{yourOTP}</h1>
+                            <p className="text-sm text-muted-foreground">Share this OTP with the worker to complete the service</p>
+                        </div>
+                    )
+                }
             </CardFooter>
         </Card>
     )
