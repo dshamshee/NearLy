@@ -21,19 +21,12 @@ export const IncomingBookingCard = ({ type }: { type: "worker" | "customer" }) =
 
     // Zustand store state and actions
     const {
-        isActive,
         incomingBooking,
         isBookingAccepted,
         outForService,
         arrivedAtDestination,
         arrivedNearby,
         location,
-        amount,
-        isPaymentReceived,
-        verifyPayment,
-        makePayment,
-        yourOTP,
-        isMapLoaded,
         isWorkDoneClicked,
         workDoneInterval,
         updateLocation,
@@ -42,9 +35,6 @@ export const IncomingBookingCard = ({ type }: { type: "worker" | "customer" }) =
         setOutForService,
         setArrivedAtDestination,
         setArrivedNearby,
-        setAmount,
-        setIsPaymentReceived,
-        setVerifyPayment,
         setMakePayment,
         setYourOTP,
         setIsMapLoaded,
@@ -91,13 +81,22 @@ export const IncomingBookingCard = ({ type }: { type: "worker" | "customer" }) =
         };
     }, [])
 
-    // Stop location sharing when worker arrives at destination
-    // useEffect(() => {
-    //     if (arrivedAtDestination && locationIntervalRef.current) {
-    //         clearInterval(locationIntervalRef.current);
-    //         locationIntervalRef.current = null;
-    //     }
-    // }, [arrivedAtDestination])
+
+    // Listen for payment received from the server 
+    useEffect(()=>{
+        if(!socket || !isConnected) return;
+        const handlePaymentReceived = ()=>{
+            console.log("Payment received from the server")
+            toast.success("Payment received from the server", {
+                position: 'top-right',
+            });
+            setMakePayment(true);
+        }
+        socket.on("payment-received", handlePaymentReceived);
+        return () => {
+            socket.off("payment-received", handlePaymentReceived);
+        }
+    }, [socket, isConnected])
 
 
     // Function to reverse geocode coordinates to address and set to the current address state

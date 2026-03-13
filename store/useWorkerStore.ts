@@ -42,6 +42,8 @@ interface WorkerState {
   setIsMapLoaded: (value: boolean) => void;
   setIsWorkDoneClicked: (value: boolean) => void;
   setWorkDoneInterval: (value: number | ((prev: number) => number)) => void;
+  resetPaymentFlow: ()=> void;
+  resetBookingStates: ()=> void;
   resetBookingFlow: () => void;
 
   // Socket Logic
@@ -68,7 +70,7 @@ export const useWorkerStore = create<WorkerState>()(
       amount: 0,
       isPaymentReceived: false,
       verifyPayment: false,
-      makePayment: true,
+      makePayment: false,
       yourOTP: "",
       isMapLoaded: false,
 
@@ -112,6 +114,30 @@ export const useWorkerStore = create<WorkerState>()(
           workDoneInterval:
             typeof value === "function" ? value(state.workDoneInterval) : value,
         })),
+
+      // reset the payment states 
+      resetPaymentFlow: () => set({
+        isPaymentReceived: false,
+        verifyPayment: false,
+        makePayment: false,
+        yourOTP: "",
+      }),
+
+      // reset all the booking states to empty
+      resetBookingStates: ()=> set({
+        ...initialBookingState,
+        location: { latitude: 0, longitude: 0 },
+        amount: 0,
+        isPaymentReceived: false,
+        verifyPayment: false,
+        makePayment: false,
+        yourOTP: "",
+        isMapLoaded: false,
+        isWorkDoneClicked: false,
+        workDoneInterval: 0,
+      }),
+      
+
 
       resetBookingFlow: () =>
         set({

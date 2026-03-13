@@ -11,14 +11,17 @@ import { Card, CardContent, CardDescription, CardFooter, CardTitle } from "@/com
 import { Button } from "./ui/button";
 import { useWorkerStore } from "@/store/useWorkerStore";
 import { isWorkCompleted } from "@/actions/updateBooking";
-import { toast } from "sonner";
+import { toast, Toaster } from "sonner";
 import { useSocket } from "@/utils/socketContext";
 import { useState } from "react";
+import { generatePaymentOTP } from "@/actions/generatePaymentOTP";
+import { verifyPaymentOTP } from "@/actions/verifyPaymentOTP";
 
 
 export const WorkerPaymentCard = () => {
 
     const [paymentVerificationOTP, setPaymentVerificationOTP] = useState<string>("");
+    const [resetAllStates, setResetAllStates ] = useState<boolean>(false);
 
 
     const { socket, isConnected } = useSocket();
@@ -35,14 +38,22 @@ export const WorkerPaymentCard = () => {
         setYourOTP,
         setAmount,
         amount,
+        resetBookingStates,
+        resetPaymentFlow,
     } = useWorkerStore();
 
 
     // Function to handle the cash payment
-    const handleCashPayment = () => {
+    const handleCashPayment = async () => {
         setVerifyPayment(true);
         setIsPaymentReceived(true);
-        setYourOTP(Math.floor(100000 + Math.random() * 900000).toString());
+        const otp = await generatePaymentOTP("WORKER", incomingBooking?.bookingId ?? "")
+        if(otp.success){
+            setYourOTP(otp.data as string);
+        }else {
+            toast.error(otp.message as string);
+        }
+       
     }
 
     // Function to handle the UPI payment
@@ -56,6 +67,11 @@ export const WorkerPaymentCard = () => {
             }
             socket.emit('request-payment', { bookingId: incomingBooking?.bookingId ?? "", amount });
             toast.success("Payment request sent successfully", { position: 'top-right' });
+            const otp = await generatePaymentOTP("WORKER", incomingBooking?.bookingId ?? "");
+            if(otp.success){
+                setYourOTP(otp.data as string);
+                setVerifyPayment(true);
+            }
         } else {
             toast.error("Amount must be at least ₹100", {
                 position: 'top-right',
@@ -65,7 +81,28 @@ export const WorkerPaymentCard = () => {
 
     // Function to handle the payment verification
     const handlePaymentVerification = async () => {
-        await isWorkCompleted(incomingBooking?.bookingId ?? "", true);
+
+        const response = await verifyPaymentOTP("CUSTOMER", incomingBooking?.bookingId ?? "", paymentVerificationOTP)
+        if(response.success){
+            toast.success(response.message as string, {
+                position: 'top-right',
+            });
+            // call this server action after verifying the OTP
+            await isWorkCompleted(incomingBooking?.bookingId ?? "", true);
+            setResetAllStates(true);
+        }else {
+            toast.error(response.message as string, {
+                position: 'top-right',
+            });
+        }
+    }
+
+
+    // function to reset the booking and payment states 
+    const handleResetAllStates = ()=>{
+        resetBookingStates();
+        resetPaymentFlow();
+        setResetAllStates(false);
     }
 
 
@@ -116,6 +153,7 @@ export const WorkerPaymentCard = () => {
                                 <Button variant="outline" className={`cursor-pointer px-10 ${isPaymentReceived ? 'hidden' : ''}`} onClick={handleCashPayment}>Cash</Button>
                                 <Button variant="outline" className={`cursor-pointer px-10 ${isPaymentReceived ? 'hidden' : ''}`} onClick={handleUPIPayment}>UPI</Button>
                                 <Button disabled={!verifyPayment} variant="outline" className={`cursor-pointer ${isPaymentReceived ? '' : 'hidden'}`} onClick={handlePaymentVerification}>Verify Payment</Button>
+                                <Button variant="outline" className={`cursor-pointer ${resetAllStates ? '' : 'hidden'}`} onClick={handleResetAllStates}>End Service</Button>
                             </div>
                         </CardContent>
 

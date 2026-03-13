@@ -88,6 +88,7 @@ export default function CustomerDashboard() {
                     const otp = await generatePaymentOTP("CUSTOMER", trackingBookingId as string);
                     if(data.success){
                         setYourOTP(otp.data as string);
+                        socket.emit("confirm-payment", {bookingId: trackingBookingId as string})
                     }else setYourOTP("OTP not generated")
                 })()
                 if (data.bookingId) setTrackingBookingId(data.bookingId);
