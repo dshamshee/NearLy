@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardTitle } from "@/com
 import { Button } from "./ui/button";
 import { useWorkerStore } from "@/store/useWorkerStore";
 import { isWorkCompleted } from "@/actions/updateBooking";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { useSocket } from "@/utils/socketContext";
 import { useState } from "react";
 import { generatePaymentOTP } from "@/actions/generatePaymentOTP";
@@ -71,6 +71,7 @@ export const WorkerPaymentCard = () => {
             if(otp.success){
                 setYourOTP(otp.data as string);
                 setVerifyPayment(true);
+                setIsPaymentReceived(true);
             }
         } else {
             toast.error("Amount must be at least ₹100", {
@@ -81,6 +82,12 @@ export const WorkerPaymentCard = () => {
 
     // Function to handle the payment verification
     const handlePaymentVerification = async () => {
+        if(!socket || !isConnected){
+            toast.error("Not connected to server. Please wait...", {
+                position: 'top-right',
+            });
+            return;
+        }
 
         const response = await verifyPaymentOTP("CUSTOMER", incomingBooking?.bookingId ?? "", paymentVerificationOTP)
         if(response.success){
@@ -90,6 +97,8 @@ export const WorkerPaymentCard = () => {
             // call this server action after verifying the OTP
             await isWorkCompleted(incomingBooking?.bookingId ?? "", true);
             setResetAllStates(true);
+            socket.emit('confirm-payment-otp', {bookingId: incomingBooking?.bookingId ?? ""})
+            
         }else {
             toast.error(response.message as string, {
                 position: 'top-right',
@@ -99,7 +108,10 @@ export const WorkerPaymentCard = () => {
 
 
     // function to reset the booking and payment states 
-    const handleResetAllStates = ()=>{
+    const handleResetAllStates = () => {
+        if (socket && isConnected && incomingBooking?.bookingId) {
+            socket.emit("service-ended", { bookingId: incomingBooking.bookingId });
+        }
         resetBookingStates();
         resetPaymentFlow();
         setResetAllStates(false);

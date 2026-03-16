@@ -59,7 +59,8 @@ export default function CustomerDashboard() {
         setRequestedPaymentAmount,
         increasePrice,
         resetAfterRejection,
-        setYourOTP
+        setYourOTP,
+        resetAllStates
     } = useCustomerStore();
 
     const searchParams = useSearchParams();
@@ -81,16 +82,33 @@ export default function CustomerDashboard() {
         const handlePaymentResult = (data: { bookingId?: string; success: boolean }) => {
             // console.log(data);
             if (data.success) {
+                const bookingIdToUse = data.bookingId ?? trackingBookingId;
+                if (!bookingIdToUse) {
+                    toast.error("Booking ID not found. Please refresh the page.", {
+                        position: "top-right",
+                    });
+                    return;
+                }
                 toast.success("Payment successful, please share the OTP with the worker to complete the service", {
                     position: "top-right",
                 });
-                (async()=>{
-                    const otp = await generatePaymentOTP("CUSTOMER", trackingBookingId as string);
-                    if(data.success){
+                (async () => {
+                    toast.info("Generating payment OTP...", {
+                        position: "top-right",
+                    });
+                    const otp = await generatePaymentOTP("CUSTOMER", bookingIdToUse);
+                    if (otp.success) {
+                        toast.success(otp.message as string, {
+                            position: "top-right",
+                        });
                         setYourOTP(otp.data as string);
-                        socket.emit("confirm-payment", {bookingId: trackingBookingId as string})
-                    }else setYourOTP("OTP not generated")
-                })()
+                        socket.emit("confirm-payment", { bookingId: bookingIdToUse });
+                    } else {
+                        toast.error(otp.message as string, {
+                            position: "top-right",
+                        });
+                    }
+                })();
                 if (data.bookingId) setTrackingBookingId(data.bookingId);
             } else {
                 toast.error("Payment failed, please try again", {
@@ -103,7 +121,7 @@ export default function CustomerDashboard() {
         return () => {
             socket.off("customer-payment-result", handlePaymentResult);
         };
-    }, [socket, setTrackingBookingId]);
+    }, [socket, setTrackingBookingId, setYourOTP, trackingBookingId]);
 
     // Listen for booking status updates from worker via socket
     useEffect(() => {
@@ -199,6 +217,31 @@ export default function CustomerDashboard() {
             });
         };
 
+        const handlePaymentOTPConfirmed = (data: {success: boolean}) =>{
+            if(data.success){
+                toast.success("payment OTP verified successfully", {
+                    position: 'top-right',
+                });
+                resetAllStates();
+            }else {
+                toast.error("payment OTP verification failed", {
+                    position: 'top-right',
+                });
+            }
+        }
+
+        const handlePaymentOTPError = (error: { message: string }) =>{
+            toast.error(error.message || "Something went wrong", {
+                position: 'top-right',
+            });
+        }
+
+        const handleServiceEnded = (data: { success?: boolean }) => {
+            if (data.success) {
+                resetAllStates();
+            }
+        };
+
         socket.on("booking-confirmed", handleBookingConfirmed);
         socket.on("booking-request-error", handleBookingError);
         socket.on("booking-rejected", handleBookingRejected);
@@ -211,6 +254,9 @@ export default function CustomerDashboard() {
         socket.on("confirm-reached-error", handleConfirmReachedError);
         socket.on("payment-requested", handlePaymentRequested);
         socket.on("payment-error", handlePaymentError);
+        socket.on("payment-otp-confirmed", handlePaymentOTPConfirmed)
+        socket.on("payment-otp-error", handlePaymentOTPError)
+        socket.on("service-ended", handleServiceEnded)
 
         return () => {
             socket.off("booking-confirmed", handleBookingConfirmed);
@@ -225,6 +271,9 @@ export default function CustomerDashboard() {
             socket.off("confirm-reached-error", handleConfirmReachedError);
             socket.off("payment-requested", handlePaymentRequested);
             socket.off("payment-error", handlePaymentError);
+            socket.off("payment-otp-confirmed", handlePaymentOTPConfirmed);
+            socket.off("payment-otp-error", handlePaymentOTPError);
+            socket.off("service-ended", handleServiceEnded);
         };
     }, [socket]);
 

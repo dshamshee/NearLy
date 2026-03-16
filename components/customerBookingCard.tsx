@@ -96,6 +96,7 @@ export const CustomerBookingCard = () => {
                         </div>
                     )
                 }
+
             </CardFooter>
         </Card>
     )

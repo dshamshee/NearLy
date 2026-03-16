@@ -67,6 +67,7 @@ interface CustomerState {
   increasePrice: () => void;
   resetAfterRejection: () => void;
   resetBookingFlow: () => void;
+  resetAllStates: ()=> void;
 }
 
 export const useCustomerStore = create<CustomerState>()(
@@ -148,6 +149,25 @@ export const useCustomerStore = create<CustomerState>()(
       workerCurrentLocation: null,
       requestedPaymentAmount: 0,
     }),
+  resetAllStates: () => set({
+    mapLoaded: false,
+    bookingDetails: null,
+    nearbyWorkers: null,
+    fetchingNearbyWorkers: false,
+    trackingBookingId: null,
+    isBookingsent: false,
+    isBookingAccepted: false,
+    isBookingRejected: false,
+    isWorkerArrived: false,
+    isWorkerOnTheWay: false,
+    isServiceStarted: false,
+    workerCurrentLocation: null,
+    requestedPaymentAmount: 0,
+    isPaymentReceived: false,
+    verifyPayment: false,
+    makePayment: false,
+    yourOTP: "",
+  }),
 }),
     {
       name: "customer-storage",

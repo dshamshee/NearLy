@@ -165,11 +165,11 @@ export const useWorkerStore = create<WorkerState>()(
           });
         };
 
-        const handlePaymentReceived = (data: { amount: number }) => {
+        const handlePaymentReceived = (data?: { amount?: number }) => {
           set({
             isPaymentReceived: true,
             verifyPayment: true,
-            amount: data.amount,
+            amount: data?.amount ?? get().amount,
           });
           toast.success("Payment received successfully", {
             position: "top-right",

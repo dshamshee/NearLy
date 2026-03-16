@@ -53,14 +53,14 @@ export const verifyPaymentOTP = async (type: "CUSTOMER" | "WORKER", bookingId: s
             }
         }
 
-        booking.save();
+        await booking.save();
 
         return {
             success: true,
             message: "Payment OTP verified successfully",
             statusCode: 200,
             error: null,
-            data: booking
+            data: null
         }
 
 
