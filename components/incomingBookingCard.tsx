@@ -378,7 +378,6 @@ export const IncomingBookingCard = ({ type }: { type: "worker" | "customer" }) =
     const handleWorkDone = () => {
         setIsWorkDoneClicked(true);
         setMakePayment(true);
-        setYourOTP(Math.floor(100000 + Math.random() * 900000).toString());
     }
 
     // Function to calculate the distance between two coordinates in meters

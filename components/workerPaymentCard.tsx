@@ -47,12 +47,12 @@ export const WorkerPaymentCard = () => {
     const handleCashPayment = async () => {
         setVerifyPayment(true);
         setIsPaymentReceived(true);
-        const otp = await generatePaymentOTP("WORKER", incomingBooking?.bookingId ?? "")
-        if(otp.success){
-            setYourOTP(otp.data as string);
-        }else {
-            toast.error(otp.message as string);
-        }
+        // const otp = await generatePaymentOTP("WORKER", incomingBooking?.bookingId ?? "")
+        // if(otp.success){
+        //     setYourOTP(otp.data as string);
+        // }else {
+        //     toast.error(otp.message as string);
+        // }
        
     }
 
@@ -67,12 +67,12 @@ export const WorkerPaymentCard = () => {
             }
             socket.emit('request-payment', { bookingId: incomingBooking?.bookingId ?? "", amount });
             toast.success("Payment request sent successfully", { position: 'top-right' });
-            const otp = await generatePaymentOTP("WORKER", incomingBooking?.bookingId ?? "");
-            if(otp.success){
-                setYourOTP(otp.data as string);
+            // const otp = await generatePaymentOTP("WORKER", incomingBooking?.bookingId ?? "");
+            // if(otp.success){
+                // setYourOTP(otp.data as string);
                 setVerifyPayment(true);
                 setIsPaymentReceived(true);
-            }
+            // }
         } else {
             toast.error("Amount must be at least ₹100", {
                 position: 'top-right',
@@ -169,12 +169,12 @@ export const WorkerPaymentCard = () => {
                             </div>
                         </CardContent>
 
-                        <CardFooter className="flex items-center justify-center gap-2">
+                        {/* <CardFooter className="flex items-center justify-center gap-2">
                             <span className="text-sm text-muted-foreground flex flex-col items-center justify-center">
                                 <p className="text-2xl font-bold text-primary">{yourOTP}</p>
                                 <p className="text-center">Share this OTP with the customer to verify payment</p>
                             </span>
-                        </CardFooter>
+                        </CardFooter> */}
                     </Card>
                 )
             }
