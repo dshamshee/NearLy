@@ -17,8 +17,14 @@ export interface Worker {
     totalBookings?: number;
     totalEarnings?: number;
     currentBookingId?: mongoose.Types.ObjectId;
-    longitude?: string;
-    latitude?: string;
+    /** GeoJSON point for geospatial queries - [longitude, latitude] */
+    location?: {
+        type: 'Point';
+        coordinates: [number, number];
+    };
+    /** Raw coordinates for UI display */
+    longitude?: number;
+    latitude?: number;
 }
 
 export enum WorkerProfessions {

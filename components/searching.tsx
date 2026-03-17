@@ -21,6 +21,7 @@ import {
 import { Textarea } from "./ui/textarea";
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
+import { getPreciseLocation, COARSE_ACCURACY_THRESHOLD } from "@/helpers/getCurrentLocation";
 
 export const Searching = ({
   setBookingDetails,
@@ -32,9 +33,10 @@ export const Searching = ({
   const [currentLocation, setCurrentLocation] = useState<{
     latitude: number | undefined;
     longitude: number | undefined;
-  }>({ latitude: undefined, longitude: undefined }); // set undefined in production
+  }>({ latitude: undefined, longitude: undefined });
   const [locationLoading, setLocationLoading] = useState<boolean>(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [accuracyWarning, setAccuracyWarning] = useState<string | null>(null);
   const [currentAddress, setCurrentAddress] = useState<string | null>(null);
   const [addressLoading, setAddressLoading] = useState<boolean>(false);
 
@@ -84,65 +86,59 @@ export const Searching = ({
   }, []);
 
   useEffect(() => {
-    if (navigator.geolocation) {
+    const fetchLocation = async () => {
       setLocationLoading(true);
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const newLocation = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          };
-          setCurrentLocation(newLocation);
-          setLocationError(null);
-          setLocationLoading(false);
-          // Update form with location when obtained
-          form.setValue("custLocation", {
-            latitude: newLocation.latitude,
-            longitude: newLocation.longitude,
-          });
-          // Reverse geocode to get address
-          await reverseGeocode(newLocation.latitude, newLocation.longitude);
-        },
-        (error) => {
-          console.log("Error on getting customer location", error);
-          setLocationLoading(false);
-          let errorMessage = "Unable to get your location. ";
+      setAccuracyWarning(null);
+      try {
+        // Wait for GPS lock - minimum 2s so user sees "Locating..." (gives device time to warm up)
+        const [coords] = await Promise.all([
+          getPreciseLocation(),
+          new Promise<void>((r) => setTimeout(r, 2000)),
+        ]);
+        const newLocation = { latitude: coords.latitude, longitude: coords.longitude };
+        setCurrentLocation(newLocation);
+        setLocationError(null);
+        form.setValue("custLocation", newLocation);
 
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
+        // Warn if accuracy is coarse (e.g. IP-based, indoor WiFi offset)
+        if (coords.accuracy > COARSE_ACCURACY_THRESHOLD) {
+          setAccuracyWarning(
+            `Location accuracy is ~${Math.round(coords.accuracy)}m. For best results, try moving closer to a window or outdoors.`
+          );
+        } else {
+          setAccuracyWarning(null);
+        }
+
+        await reverseGeocode(newLocation.latitude, newLocation.longitude);
+      } catch (error) {
+        console.log("Error on getting customer location", error);
+        let errorMessage = "Unable to get your location. ";
+        if (error instanceof Error && error.message === "Geolocation is not supported by your browser") {
+          errorMessage = "Geolocation is not supported by your browser. Please use a modern browser or enable location services.";
+        } else if (error && typeof error === "object" && "code" in error) {
+          const geoError = error as GeolocationPositionError;
+          switch (geoError.code) {
+            case geoError.PERMISSION_DENIED:
               errorMessage += "Please allow location access in your browser settings. If accessing via IP address, try using HTTPS or localhost.";
               break;
-            case error.POSITION_UNAVAILABLE:
+            case geoError.POSITION_UNAVAILABLE:
               errorMessage += "Location information is unavailable.";
               break;
-            case error.TIMEOUT:
+            case geoError.TIMEOUT:
               errorMessage += "Location request timed out. Please try again.";
               break;
             default:
               errorMessage += "An unknown error occurred. Please try again.";
               break;
           }
-
-          setLocationError(errorMessage);
-          toast.error(errorMessage, { duration: 5000, position: 'top-center' });
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
         }
-      );
-    } else {
-      // setCurrentLocation({latitude: 22.3040, longitude: 73.2027})
-      const defaultLocation = { latitude: 22.3040, longitude: 73.2027 };
-      // form.setValue("custLocation", defaultLocation); // Remove in production
-      setLocationLoading(false);
-      const errorMsg = "Geolocation is not supported by your browser. Please use a modern browser or enable location services.";
-      setLocationError(errorMsg);
-      toast.error(errorMsg, { duration: 5000, position: 'top-center' });
-      // Reverse geocode default location
-      reverseGeocode(defaultLocation.latitude, defaultLocation.longitude);
-    }
+        setLocationError(errorMessage);
+        toast.error(errorMessage, { duration: 5000, position: 'top-center' });
+      } finally {
+        setLocationLoading(false);
+      }
+    };
+    fetchLocation();
   }, [form, reverseGeocode]);
 
   // Also reverse geocode if default location is set on mount
@@ -182,12 +178,18 @@ export const Searching = ({
         {locationLoading && (
           <div className="text-sm text-muted-foreground flex items-center gap-2">
             <span className="animate-spin">⏳</span>
-            Getting your location...
+            Locating... (using GPS for best accuracy)
           </div>
         )}
         {locationError && (
           <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">
             {locationError}
+          </div>
+        )}
+        {accuracyWarning && (
+          <div className="text-sm text-amber-600 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-md flex items-start gap-2">
+            <span>⚠</span>
+            <span>{accuracyWarning}</span>
           </div>
         )}
         {!locationLoading && !locationError && currentLocation.latitude && currentLocation.longitude && (

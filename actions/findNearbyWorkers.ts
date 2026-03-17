@@ -10,23 +10,18 @@ export async function findNearbyWorkers(latitude: number, longitude: number, pro
 
     try {
         await dbConnect();
-        
-        // Calculate approximate bounding box for ~5KM radius
-        // Approximately 0.045 degrees ≈ 5km at the equator
-        const latRange = 0.045;
-        const lngRange = 0.045;
-        
-        // Find workers within ~5KM radius of the given latitude and longitude
-        // Only include active workers with completed profiles
-        // Use $expr to convert Decimal128 to double for comparison
+
+        // Use $near with 2dsphere index for high-performance geospatial search
+        // $maxDistance is in meters (5000 = 5km)
         const workers = await WorkerModel.find({
-            $expr: {
-                $and: [
-                    { $gte: [{ $toDouble: "$latitude" }, latitude - latRange] },
-                    { $lte: [{ $toDouble: "$latitude" }, latitude + latRange] },
-                    { $gte: [{ $toDouble: "$longitude" }, longitude - lngRange] },
-                    { $lte: [{ $toDouble: "$longitude" }, longitude + lngRange] },
-                ]
+            location: {
+                $near: {
+                    $geometry: {
+                        type: "Point",
+                        coordinates: [longitude, latitude] // GeoJSON: [lng, lat]
+                    },
+                    $maxDistance: 5000 // 5km in meters
+                }
             },
             profession: profession,
             isActive: true,

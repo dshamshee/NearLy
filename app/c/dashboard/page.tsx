@@ -27,6 +27,7 @@ import {
 import { createBooking } from "@/actions/createBooking";
 import { CustomerBookingCard } from "@/components/customerBookingCard";
 import { generatePaymentOTP } from "@/actions/generatePaymentOTP";
+import { calculateDistance, formatDistance } from "@/helpers/calculateDistance";
 
 
 export type NearbyWorkerType = CustomerNearbyWorker;
@@ -292,15 +293,15 @@ export default function CustomerDashboard() {
     }, [socket, isConnected, trackingBookingId]);
 
     // Function to calculate the distance between two coordinates in meters
-    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-        const R = 6371e3; // Earth radius in meters
-        const dLat = (lat2 - lat1) * (Math.PI / 180);
-        const dLon = (lon2 - lon1) * (Math.PI / 180);
-        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        const d = R * c;
-        return d;
-    }
+    // const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    //     const R = 6371e3; // Earth radius in meters
+    //     const dLat = (lat2 - lat1) * (Math.PI / 180);
+    //     const dLon = (lon2 - lon1) * (Math.PI / 180);
+    //     const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    //     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    //     const d = R * c;
+    //     return d;
+    // }
 
     // Helper function to convert Decimal128 or number to number
     const toNumber = (value: number | { toString(): string } | undefined): number => {
@@ -479,12 +480,14 @@ export default function CustomerDashboard() {
             {nearbyWorkers && nearbyWorkers.length > 0 && !isBookingsent && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{
                     nearbyWorkers.map((worker) => {
-                        const distance = calculateDistance(
-                            bookingDetails?.custLocation.latitude ?? 0,
-                            bookingDetails?.custLocation.longitude ?? 0,
-                            toNumber(worker.latitude),
-                            toNumber(worker.longitude)
+                        const dist = calculateDistance(
+                            Number(bookingDetails?.custLocation.latitude ?? 0),
+                            Number(bookingDetails?.custLocation.longitude ?? 0),
+                            Number(worker.latitude),
+                            Number(worker.longitude)
                         );
+                        const distance = formatDistance(dist)
+
 
                         return (
                             <NearbyWorkers

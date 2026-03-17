@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate:worker-coordinates": "tsx scripts/migrate-worker-coordinates.ts"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.2",
@@ -54,6 +55,7 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "tsx": "^4.19.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

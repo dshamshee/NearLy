@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Spinner } from "./ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { getWorkerProfileStatus } from "@/actions/workerProfileStatus";
+import { getCurrentCoordinatesWithFallback } from "@/helpers/getCurrentLocation";
 import {
     Alert,
     AlertAction,
@@ -48,45 +49,26 @@ export const WorkerAvailability = () => {
         checkProfileStatus();
 
         if (session?.user?._id) {
-            // Check if the worker's location is available or not
-            if (navigator.geolocation) {
-                const tryGetPosition = (options: PositionOptions, isRetry = false) => {
-                    navigator.geolocation.getCurrentPosition(
-                        (position) => {
-                            useWorkerStore.getState().updateLocation(position.coords.latitude, position.coords.longitude);
-                            setLocationError(null);
-                        },
-                        (error: GeolocationPositionError) => {
-                            if (error.code === 3 && !isRetry) {
-                                // Timeout: retry with relaxed options (network/cached location is faster)
-                                tryGetPosition({
-                                    enableHighAccuracy: false,
-                                    timeout: 15000,
-                                    maximumAge: 60000
-                                }, true);
-                                return;
-                            }
-                            const msg = `Geolocation error (code ${error.code}): ${error.message}`;
-                            console.error(msg);
-                            setLocationError(msg);
-                            const userMsg = error.code === 1
-                                ? "Location access denied. Please enable location permissions."
-                                : error.code === 3
-                                    ? "Location request timed out. Please try again."
-                                    : "Unable to get your location. Please enable location access.";
-                            toast.error(userMsg, {
-                                position: 'top-right',
-                            });
-                        },
-                        options
-                    );
-                };
-                tryGetPosition({
-                    enableHighAccuracy: true,
-                    timeout: 20000,
-                    maximumAge: 0
+            getCurrentCoordinatesWithFallback()
+                .then((coords) => {
+                    useWorkerStore.getState().updateLocation(coords.latitude, coords.longitude);
+                    setLocationError(null);
+                })
+                .catch((error: GeolocationPositionError | Error) => {
+                    const msg = `Geolocation error${'code' in error ? ` (code ${error.code})` : ''}: ${error.message}`;
+                    console.error(msg);
+                    setLocationError(msg);
+                    const userMsg = 'code' in error
+                        ? error.code === 1
+                            ? "Location access denied. Please enable location permissions."
+                            : error.code === 3
+                                ? "Location request timed out. Please try again."
+                                : "Unable to get your location. Please enable location access."
+                        : error.message;
+                    toast.error(userMsg, {
+                        position: 'top-right',
+                    });
                 });
-            }
         }
     }, [session?.user?._id]);
 

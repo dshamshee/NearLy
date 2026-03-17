@@ -13,7 +13,7 @@ import { Button } from "./ui/button"
 
 export const NearbyWorkers = (
     { avatar, name, experience, distance, ratings, serviceCharge, sendBookingRequest, workerId }
-    : { avatar: string, name: string, experience: string, distance: number, ratings: number,
+    : { avatar: string, name: string, experience: string, distance: string, ratings: number,
          serviceCharge: number, sendBookingRequest: (workerId: string) => void, workerId: string }) => {
     
 
@@ -28,7 +28,7 @@ export const NearbyWorkers = (
             <CardTitle>{name}</CardTitle>
             <CardDescription className="flex flex-row text-xs gap-4 md:gap-8 w-full mt-4 items-center">
                 <div className="flex gap-1 flex-col items-center">
-                <MapPinIcon className="size-4 text-blue-500" /> {(distance / 1000).toFixed(1)} KM
+                <MapPinIcon className="size-4 text-blue-500" /> {distance}
                 </div>
                 <div className="flex gap-1 flex-col items-center">
                 <NotepadText className="size-4 text-green-500" /> {experience}

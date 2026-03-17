@@ -3,7 +3,7 @@ import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader,
 import { Button } from "./ui/button";
 import { useCustomerStore } from "@/store/useCustomerStore";
 import { useEffect, useState } from "react";
-import { calculateDistance } from "@/utils/calculateDistance";
+import { calculateDistance, formatDistance } from "@/helpers/calculateDistance";
 import { Spinner } from "./ui/spinner";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
@@ -22,20 +22,20 @@ export const CustomerBookingCard = () => {
         trackingBookingId,
         yourOTP,
     } = useCustomerStore();
-    const [distance, setDistance] = useState<number>(0);
+    const [distance, setDistance] = useState<string>("");
 
 
     // Calculate distance between customer and worker
     useEffect(() => {
         if (!workerCurrentLocation || !bookingDetails) return;
         (async () => {
-            const distance = await calculateDistance(
+            const dist = await calculateDistance(
                 Number(bookingDetails?.custLocation.latitude ?? 0),
                 Number(bookingDetails?.custLocation.longitude ?? 0),
                 Number(workerCurrentLocation?.latitude ?? 0),
                 Number(workerCurrentLocation?.longitude ?? 0)
             );
-            setDistance(distance);
+            setDistance(formatDistance(dist));
         })()
     }, [workerCurrentLocation, bookingDetails])
 
@@ -51,7 +51,7 @@ export const CustomerBookingCard = () => {
                     <p>Profession: {(bookingDetails?.workNeededProfession ?? "").charAt(0).toUpperCase() + (bookingDetails?.workNeededProfession ?? "").slice(1).toLowerCase()}</p>
                     <p>Description: {bookingDetails?.workNeededDescription}</p>
                     <p>Price Range: ₹{bookingDetails?.priceRange}</p>
-                    <p>Distance from you: {(distance / 1000).toFixed(2)} Km</p>
+                    <p>Distance from you: {distance}</p>
                 </CardDescription>
 
 

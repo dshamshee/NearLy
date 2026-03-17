@@ -8,6 +8,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Spinner } from "./ui/spinner";
 import { useSocket } from "@/utils/socketContext";
 import { useSession } from "next-auth/react";
+import { calculateDistance } from "@/utils/calculateDistance";
+import { convertToMeters, formatDistance, reverseGeocode } from "@/helpers/calculateDistance";
+import { getPreciseLocation, getCurrentCoordinates, type LocationCoords } from "@/helpers/getCurrentLocation";
 
 
 export const IncomingBookingCard = ({ type }: { type: "worker" | "customer" }) => {
@@ -18,6 +21,7 @@ export const IncomingBookingCard = ({ type }: { type: "worker" | "customer" }) =
 
     const [currentAddress, setCurrentAddress] = useState<string | null>(null);
     const [addressLoading, setAddressLoading] = useState<boolean>(false);
+    const [distance, setDistance] = useState<string>("");
 
     // Zustand store state and actions
     const {
@@ -52,12 +56,12 @@ export const IncomingBookingCard = ({ type }: { type: "worker" | "customer" }) =
     const workDoneIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     // Stop location sharing when worker arrives at destination
-    useEffect(() => {
-        if (arrivedAtDestination && locationIntervalRef.current) {
-            clearInterval(locationIntervalRef.current);
-            locationIntervalRef.current = null;
-        }
-    }, [arrivedAtDestination])
+    // useEffect(() => {
+    //     if (arrivedAtDestination && locationIntervalRef.current) {
+    //         clearInterval(locationIntervalRef.current);
+    //         locationIntervalRef.current = null;
+    //     }
+    // }, [arrivedAtDestination])
 
     // Stop location sharing when worker arrives at destination
     useEffect(() => {
@@ -83,9 +87,9 @@ export const IncomingBookingCard = ({ type }: { type: "worker" | "customer" }) =
 
 
     // Listen for payment received from the server 
-    useEffect(()=>{
-        if(!socket || !isConnected) return;
-        const handlePaymentReceived = ()=>{
+    useEffect(() => {
+        if (!socket || !isConnected) return;
+        const handlePaymentReceived = () => {
             console.log("Payment received from the server")
             toast.success("Payment received from the server", {
                 position: 'top-right',
@@ -100,41 +104,28 @@ export const IncomingBookingCard = ({ type }: { type: "worker" | "customer" }) =
 
 
     // Function to reverse geocode coordinates to address and set to the current address state
-    const reverseGeocode = useCallback(async (latitude: number, longitude: number) => {
+    const getFullAddress = useCallback(async () => {
         try {
-            setAddressLoading(true);
-            const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-            if (!apiKey) {
-                console.warn("Google Maps API key not found");
-                return;
-            }
-
-            const response = await fetch(
-                `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
-            );
-
-            const data = await response.json();
-
-            if (data.status === 'OK' && data.results && data.results.length > 0) {
-                // Get the formatted address (first result is usually the most specific)
-                const address = data.results[0].formatted_address;
-                setCurrentAddress(address);
-            } else {
-                console.warn("Geocoding failed:", data.status);
-                setCurrentAddress(null);
-            }
-        } catch (error) {
-            console.error("Error reverse geocoding:", error);
-            setCurrentAddress(null);
+           const address = await reverseGeocode(Number(incomingBooking?.jobDetails?.custLocation?.latitude), Number(incomingBooking?.jobDetails?.custLocation?.longitude))
+           setCurrentAddress(address)
+        } catch (error: unknown) {
+            console.log(error instanceof Error ? error.message : "Internal Server Error on getFullAddress");
+            toast.error("Something went wrong", {
+                position: 'top-right',
+            });
+            setCurrentAddress("Address not found. Please try again later.");
         } finally {
             setAddressLoading(false);
         }
-    }, []);
+    }, [incomingBooking]);
 
     // Reverse geocode the incoming booking request's customer location and set to the current address state
     useEffect(() => {
         if (incomingBooking) {
-            reverseGeocode(incomingBooking.jobDetails.custLocation.latitude, incomingBooking.jobDetails.custLocation.longitude);
+            const dist = calculateDistance(latitude, longitude, incomingBooking?.jobDetails?.custLocation?.latitude, incomingBooking?.jobDetails?.custLocation?.longitude)
+            setDistance(formatDistance(dist))
+            getFullAddress();
+
         }
     }, [incomingBooking])
 
@@ -189,11 +180,8 @@ export const IncomingBookingCard = ({ type }: { type: "worker" | "customer" }) =
     }
 
     // Helper function to check location and update state
-    const checkLocationAndUpdate = (position: GeolocationPosition) => {
-        const loc = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-        };
+    const checkLocationAndUpdate = (coords: LocationCoords) => {
+        const loc = { latitude: coords.latitude, longitude: coords.longitude };
 
         updateLocation(loc.latitude, loc.longitude);
 
@@ -206,16 +194,10 @@ export const IncomingBookingCard = ({ type }: { type: "worker" | "customer" }) =
         // Check if the worker has arrived nearby the destination
         const booking = useWorkerStore.getState().incomingBooking;
         if (booking?.jobDetails?.custLocation?.latitude && booking?.jobDetails?.custLocation?.longitude) {
-            const distance = getDistanceInMeters(
-                loc.latitude,
-                loc.longitude,
-                booking.jobDetails.custLocation.latitude,
-                booking.jobDetails.custLocation.longitude
-            );
-
-            console.log('Distance to destination:', distance, 'meters');
-
-            if (distance < 500) {
+            // Calculate the distance between worker and customer
+            const dist = calculateDistance(loc.latitude, loc.longitude, Number(booking?.jobDetails?.custLocation?.latitude), Number(booking?.jobDetails?.custLocation?.longitude))
+            const distInMeters = convertToMeters(dist);
+            if (distInMeters < 700) {
                 setArrivedNearby(true);
             }
         }
@@ -235,49 +217,27 @@ export const IncomingBookingCard = ({ type }: { type: "worker" | "customer" }) =
             // Reset arrivedNearby state when starting navigation
             setArrivedNearby(false);
 
-            // Check location immediately when starting navigation
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        checkLocationAndUpdate(position);
-                    },
-                    (error: GeolocationPositionError) => {
-                        const msg = `Geolocation error (code ${error.code}): ${error.message}`;
-                        console.error(msg);
-                        const userMsg = error.code === 1
-                            ? "Location access denied. Please enable location permissions."
-                            : error.code === 3
-                                ? "Location request timed out. Please try again."
-                                : "Unable to get your location. Please enable location access.";
-                        toast.error(userMsg, {
-                            position: 'top-right',
-                        });
-                    },
-                    {
-                        enableHighAccuracy: true,
-                        timeout: 20000,
-                        maximumAge: 0
-                    }
-                );
-            }
+            // Check location immediately when starting navigation (high accuracy for live tracking)
+            getPreciseLocation()
+                .then(checkLocationAndUpdate)
+                .catch((error: GeolocationPositionError) => {
+                    const msg = `Geolocation error (code ${error.code}): ${error.message}`;
+                    console.error(msg);
+                    const userMsg = error.code === 1
+                        ? "Location access denied. Please enable location permissions."
+                        : error.code === 3
+                            ? "Location request timed out. Please try again."
+                            : "Unable to get your location. Please enable location access.";
+                    toast.error(userMsg, { position: 'top-right' });
+                });
 
             // Set up interval to check location every 5 seconds (allow cached position for reliability)
             const interval = setInterval(() => {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        (position) => {
-                            checkLocationAndUpdate(position);
-                        },
-                        (error: GeolocationPositionError) => {
-                            console.warn(`Geolocation in interval (code ${error.code}): ${error.message}`);
-                        },
-                        {
-                            enableHighAccuracy: false,
-                            timeout: 15000,
-                            maximumAge: 5000
-                        }
-                    );
-                }
+                getCurrentCoordinates({ enableHighAccuracy: false, timeout: 15000, maximumAge: 5000 })
+                    .then(checkLocationAndUpdate)
+                    .catch((error: GeolocationPositionError) => {
+                        console.warn(`Geolocation in interval (code ${error.code}): ${error.message}`);
+                    });
             }, 5000);
 
             // Store the interval ID in the ref
@@ -380,16 +340,9 @@ export const IncomingBookingCard = ({ type }: { type: "worker" | "customer" }) =
         setMakePayment(true);
     }
 
-    // Function to calculate the distance between two coordinates in meters
-    const getDistanceInMeters = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-        const R = 6371e3; // Earth radius in meters
-        const dLat = (lat2 - lat1) * (Math.PI / 180);
-        const dLon = (lon2 - lon1) * (Math.PI / 180);
-        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        const d = R * c;
-        return d;
-    }
+
+
+
 
     return (
         <>
@@ -412,7 +365,7 @@ export const IncomingBookingCard = ({ type }: { type: "worker" | "customer" }) =
                                                 <p className="text-sm text-muted-foreground">Cutomer Location: {currentAddress ?? "No address found"}</p>
                                             )
                                     }
-                                    <p className="text-sm text-muted-foreground">Distance from you: {(getDistanceInMeters(incomingBooking.jobDetails.custLocation.latitude, incomingBooking.jobDetails.custLocation.longitude, latitude, longitude) / 1000).toFixed(2)} Km</p>
+                                    <p className="text-sm text-muted-foreground">Distance from you: {distance}</p>
                                 </CardDescription>
                             </div>
                             <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
