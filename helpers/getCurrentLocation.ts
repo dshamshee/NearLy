@@ -13,7 +13,7 @@ export type PositionOptions = {
 const DEFAULT_OPTIONS: PositionOptions = {
   enableHighAccuracy: true,
   timeout: 15000,
-  maximumAge: 0,
+  maximumAge: 60000,
 };
 
 /**
@@ -55,7 +55,7 @@ export const getCurrentCoordinates = (
 export const PRECISE_LOCATION_OPTIONS: PositionOptions = {
   enableHighAccuracy: true, // Forces GPS/WiFi triangulation, not IP-based
   timeout: 15000,          // Wait up to 15s for satellite lock
-  maximumAge: 0,            // Never use cached (stale) location
+  maximumAge: 60000,            // Never use cached (stale) location
 };
 
 export const getPreciseLocation = (): Promise<LocationCoords> => {
@@ -77,18 +77,31 @@ export const COARSE_ACCURACY_THRESHOLD = 100;
  * Gets location with fallback: tries high accuracy first, retries with cached
  * position on timeout. Useful when GPS is slow (e.g. indoors).
  */
-export const getCurrentCoordinatesWithFallback = (): Promise<LocationCoords> => {
-  return getPreciseLocation().catch((err: GeolocationPositionError) => {
-    if (err.code === 3) {
-      // Timeout: fall back to cached position (indoor/campus WiFi often slower)
-      return getCurrentCoordinates({
+/** * Refined Fallback: 
+ * 1. Tries fresh GPS (0 cache)
+ * 2. If timeout, tries cached/WiFi (relaxed)
+ */
+export const getCurrentCoordinatesWithFallback = async (): Promise<LocationCoords> => {
+  try {
+    // Attempt 1: Fresh, High Accuracy, No Cache
+    return await getCurrentCoordinates({
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0, 
+    });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (err: any) {
+    if (err.code === 3 || err.code === 1) { // Timeout or Permissions issue
+      console.warn("Retrying with relaxed accuracy settings...");
+      // Attempt 2: Use cached position (up to 1 min old) to show SOMETHING
+      return await getCurrentCoordinates({
         enableHighAccuracy: false,
-        timeout: 15000,
+        timeout: 5000,
         maximumAge: 60000,
       });
     }
     throw err;
-  });
+  }
 };
   
 /**
@@ -111,8 +124,8 @@ export const startLocationWatch = (
       (err) => onError(err),
     {
       enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0,
+      timeout: 15000,
+      maximumAge: 60000,
     }
   );
 };

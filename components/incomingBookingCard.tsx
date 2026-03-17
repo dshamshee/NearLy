@@ -8,8 +8,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Spinner } from "./ui/spinner";
 import { useSocket } from "@/utils/socketContext";
 import { useSession } from "next-auth/react";
-import { calculateDistance } from "@/utils/calculateDistance";
-import { convertToMeters, formatDistance, reverseGeocode } from "@/helpers/calculateDistance";
+
+import { convertToMeters, formatDistance, reverseGeocode, calculateDistance } from "@/helpers/calculateDistance";
 import { getPreciseLocation, getCurrentCoordinates, type LocationCoords } from "@/helpers/getCurrentLocation";
 
 

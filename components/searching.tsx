@@ -95,6 +95,8 @@ export const Searching = ({
           getPreciseLocation(),
           new Promise<void>((r) => setTimeout(r, 2000)),
         ]);
+        
+        console.log("coords: ", coords)
         const newLocation = { latitude: coords.latitude, longitude: coords.longitude };
         setCurrentLocation(newLocation);
         setLocationError(null);
