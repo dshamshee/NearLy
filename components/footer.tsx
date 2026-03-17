@@ -16,7 +16,7 @@ export const Footer = () => {
                     </div>
                     <div className="2 flex flex-col items-center justify-around gap-4">
                         <Link href="/services">Services</Link>
-                        <Link href="/contact-us">Contact Us</Link>
+                        <Link href="/contact">Contact Us</Link>
                     </div>
                     <div className="3 flex flex-col items-center justify-around gap-4">
                         <Link href="/privacy-policy">Privacy Policy</Link>

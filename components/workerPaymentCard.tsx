@@ -7,7 +7,6 @@ import {
     InputOTPSeparator,
     InputOTPSlot,
 } from "@/components/ui/input-otp"
-import { Card, CardContent, CardDescription, CardFooter, CardTitle } from "@/components/ui/card";
 import { Button } from "./ui/button";
 import { useWorkerStore } from "@/store/useWorkerStore";
 import { isWorkCompleted } from "@/actions/updateBooking";
@@ -47,13 +46,8 @@ export const WorkerPaymentCard = () => {
     const handleCashPayment = async () => {
         setVerifyPayment(true);
         setIsPaymentReceived(true);
-        // const otp = await generatePaymentOTP("WORKER", incomingBooking?.bookingId ?? "")
-        // if(otp.success){
-        //     setYourOTP(otp.data as string);
-        // }else {
-        //     toast.error(otp.message as string);
-        // }
-       
+        await isWorkCompleted(incomingBooking?.bookingId ?? "", true);
+        setResetAllStates(true); // Cash: no OTP needed, go straight to End Service
     }
 
     // Function to handle the UPI payment
@@ -120,64 +114,99 @@ export const WorkerPaymentCard = () => {
 
     return (
         <>
-            {
-                makePayment && (
-                    <Card className="mx-auto">
-                        <CardContent className="flex flex-col md:flex-row items-center justify-between gap-2">
-                            <div>
-                                <CardTitle>
-                                    <p className="text-lg font-semibold">{isPaymentReceived ? `Verify Payment` : "Make Payment"}</p>
-                                </CardTitle>
-                                <CardDescription className="flex flex-col items-center justify-center gap-2">
-                                    <p className="text-sm text-muted-foreground">{isPaymentReceived ? "Please enter the customer's shared OTP to verify payment" : "Enter the amount to request for payment"}</p>
+            {makePayment && (
+                <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+                    <div className="px-5 py-4 border-b border-border">
+                        <h3 className="text-lg font-semibold text-foreground">
+                            {isPaymentReceived ? "Verify Payment" : "Collect Payment"}
+                        </h3>
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                            {isPaymentReceived
+                                ? "Enter the 6-digit OTP shared by the customer"
+                                : "Request payment from the customer"}
+                        </p>
+                    </div>
+                    <div className="p-5 space-y-4">
+                        {!isPaymentReceived ? (
+                            <>
+                                <div>
+                                    <label className="text-sm font-medium text-foreground mb-2 block">
+                                        Amount (min ₹100)
+                                    </label>
                                     <Input
                                         type="number"
-                                        placeholder="Enter amount"
-                                        className={`w-full ${isPaymentReceived ? 'hidden' : ''}`}
+                                        placeholder="e.g. 500"
+                                        className="max-w-[180px]"
                                         value={amount}
                                         onChange={(e) => setAmount(Number(e.target.value))}
                                         min={100}
                                     />
-
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    <Button
+                                        variant="outline"
+                                        className="cursor-pointer"
+                                        onClick={handleCashPayment}
+                                    >
+                                        Cash
+                                    </Button>
+                                    <Button
+                                        className="cursor-pointer bg-orange-500 hover:bg-orange-600 text-white"
+                                        onClick={handleUPIPayment}
+                                    >
+                                        Request UPI
+                                    </Button>
+                                </div>
+                            </>
+                        ) : resetAllStates ? (
+                            <div className="flex items-center justify-between gap-4 py-2">
+                                <p className="text-sm text-muted-foreground">
+                                    Payment verified. End the service to complete.
+                                </p>
+                                <Button
+                                    className="cursor-pointer bg-green-600 hover:bg-green-700 text-white"
+                                    onClick={handleResetAllStates}
+                                >
+                                    End Service
+                                </Button>
+                            </div>
+                        ) : (
+                            <>
+                                <div>
+                                    <label className="text-sm font-medium text-foreground mb-2 block">
+                                        OTP
+                                    </label>
                                     <InputOTP
                                         id="paymentVerificationOTP"
-                                        className={`${isPaymentReceived ? '' : 'hidden'}`}
                                         maxLength={6}
                                         value={paymentVerificationOTP?.toString()}
                                         onChange={(value) => setPaymentVerificationOTP(value)}
                                     >
-                                        <InputOTPGroup className={`${isPaymentReceived ? '' : 'hidden'}`}>
+                                        <InputOTPGroup>
                                             <InputOTPSlot index={0} />
                                             <InputOTPSlot index={1} />
                                             <InputOTPSlot index={2} />
                                         </InputOTPGroup>
-                                        <InputOTPSeparator className={`${isPaymentReceived ? '' : 'hidden'}`} />
-                                        <InputOTPGroup className={`${isPaymentReceived ? '' : 'hidden'}`}>
+                                        <InputOTPSeparator />
+                                        <InputOTPGroup>
                                             <InputOTPSlot index={3} />
                                             <InputOTPSlot index={4} />
                                             <InputOTPSlot index={5} />
                                         </InputOTPGroup>
                                     </InputOTP>
-                                </CardDescription>
-                            </div>
-
-                            <div className="flex items-center justify-center gap-2">
-                                <Button variant="outline" className={`cursor-pointer px-10 ${isPaymentReceived ? 'hidden' : ''}`} onClick={handleCashPayment}>Cash</Button>
-                                <Button variant="outline" className={`cursor-pointer px-10 ${isPaymentReceived ? 'hidden' : ''}`} onClick={handleUPIPayment}>UPI</Button>
-                                <Button disabled={!verifyPayment} variant="outline" className={`cursor-pointer ${isPaymentReceived ? '' : 'hidden'}`} onClick={handlePaymentVerification}>Verify Payment</Button>
-                                <Button variant="outline" className={`cursor-pointer ${resetAllStates ? '' : 'hidden'}`} onClick={handleResetAllStates}>End Service</Button>
-                            </div>
-                        </CardContent>
-
-                        {/* <CardFooter className="flex items-center justify-center gap-2">
-                            <span className="text-sm text-muted-foreground flex flex-col items-center justify-center">
-                                <p className="text-2xl font-bold text-primary">{yourOTP}</p>
-                                <p className="text-center">Share this OTP with the customer to verify payment</p>
-                            </span>
-                        </CardFooter> */}
-                    </Card>
-                )
-            }
+                                </div>
+                                <Button
+                                    disabled={!verifyPayment}
+                                    className="cursor-pointer bg-orange-500 hover:bg-orange-600 text-white"
+                                    onClick={handlePaymentVerification}
+                                >
+                                    Verify OTP
+                                </Button>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
         </>
     )
 }

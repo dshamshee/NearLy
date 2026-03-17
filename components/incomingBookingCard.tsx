@@ -1,6 +1,5 @@
 'use client';
 import { useWorkerStore } from "@/store/useWorkerStore";
-import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { Button } from "./ui/button";
 import { isWorkerArrived, isWorkerOutForService, updateBookingStatus } from "@/actions/updateBooking";
 import { toast } from "sonner";
@@ -346,49 +345,95 @@ export const IncomingBookingCard = ({ type }: { type: "worker" | "customer" }) =
 
     return (
         <>
-            {
-                incomingBooking && (
-                    <Card className=" mx-auto">
-                        <CardContent className="flex md:flex-row flex-col items-center justify-between gap-2">
+            {incomingBooking && (
+                <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+                    <div className="bg-orange-500/5 border-b border-orange-500/10 px-5 py-4">
+                        <div className="flex items-center justify-between gap-4">
                             <div>
-                                <CardTitle>
-                                    <p className="text-lg font-semibold">BOOKING FOR {incomingBooking.jobDetails.workNeededProfession.toUpperCase()}</p>
-                                </CardTitle>
-                                <CardDescription>
-                                    <p className="text-sm text-muted-foreground">Details: {incomingBooking.jobDetails.workNeededDescription}</p>
-                                    <p className="text-sm text-muted-foreground">Price Range: ₹{incomingBooking.jobDetails.priceRange}</p>
-                                    {
-                                        addressLoading ? (
-                                            <p className="text-sm text-muted-foreground animate-pulse">Loading address... <Spinner className="size-4 inline-block" /></p>
-                                        )
-                                            : (
-                                                <p className="text-sm text-muted-foreground">Cutomer Location: {currentAddress ?? "No address found"}</p>
-                                            )
-                                    }
-                                    <p className="text-sm text-muted-foreground">Distance from you: {distance}</p>
-                                </CardDescription>
+                                <span className="text-xs font-medium text-orange-600 dark:text-orange-400 uppercase tracking-wider">
+                                    New request
+                                </span>
+                                <h3 className="text-lg font-semibold text-foreground mt-0.5">
+                                    {incomingBooking.jobDetails.workNeededProfession}
+                                </h3>
                             </div>
-                            <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
-                                {
-                                    type === "worker" ? (
-                                        <>
-                                            <Button disabled={isBookingAccepted} className="cursor-pointer text-red-500" variant="outline" onClick={() => handleRejectBooking(incomingBooking.bookingId)}>Reject</Button>
-                                            <Button disabled={isBookingAccepted} className="cursor-pointer text-green-500" variant="outline" onClick={() => handleAcceptBooking(incomingBooking.bookingId)}>Accept</Button>
-                                            <Button disabled={!isBookingAccepted || outForService} className="cursor-pointer text-blue-500" variant="outline" onClick={() => handleOutForService(incomingBooking.bookingId)}>Out for Service</Button>
-                                            <Button disabled={!outForService || !arrivedNearby || arrivedAtDestination} className="cursor-pointer text-green-500" variant="outline" onClick={handleStartWorking}>Arrived</Button>
-                                            <Button disabled={workDoneInterval !== 0 || !arrivedAtDestination || isWorkDoneClicked} className="cursor-pointer text-green-500" variant="outline" onClick={handleWorkDone}>{workDoneInterval !== 0 ? `${workDoneInterval} sec` : "Done"}</Button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Button>Customer Buttons</Button>
-                                        </>
-                                    )
-                                }
+                            <div className="text-right">
+                                <p className="text-xl font-bold text-orange-600 dark:text-orange-400">
+                                    ₹{incomingBooking.jobDetails.priceRange}
+                                </p>
+                                <p className="text-xs text-muted-foreground">{distance} away</p>
                             </div>
-                        </CardContent>
-                    </Card>
-                )
-            }
+                        </div>
+                    </div>
+                    <div className="p-5 space-y-4">
+                        <p className="text-sm text-foreground">
+                            {incomingBooking.jobDetails.workNeededDescription}
+                        </p>
+                        {addressLoading ? (
+                            <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                <Spinner className="size-4 animate-spin" /> Loading address...
+                            </p>
+                        ) : (
+                            <p className="text-sm text-muted-foreground flex items-start gap-2">
+                                <span className="shrink-0">📍</span>
+                                {currentAddress ?? "Address unavailable"}
+                            </p>
+                        )}
+                        <div className="flex flex-wrap gap-2 pt-2">
+                            {type === "worker" ? (
+                                <>
+                                    <Button
+                                        disabled={isBookingAccepted}
+                                        variant="outline"
+                                        size="sm"
+                                        className="cursor-pointer border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 dark:border-red-900/50 dark:hover:bg-red-950/30"
+                                        onClick={() => handleRejectBooking(incomingBooking.bookingId)}
+                                    >
+                                        Reject
+                                    </Button>
+                                    <Button
+                                        disabled={isBookingAccepted}
+                                        size="sm"
+                                        className="cursor-pointer bg-orange-500 hover:bg-orange-600 text-white"
+                                        onClick={() => handleAcceptBooking(incomingBooking.bookingId)}
+                                    >
+                                        Accept
+                                    </Button>
+                                    <Button
+                                        disabled={!isBookingAccepted || outForService}
+                                        variant="outline"
+                                        size="sm"
+                                        className="cursor-pointer border-orange-200 text-orange-600 hover:bg-orange-50 hover:border-orange-300 dark:border-orange-900/50 dark:hover:bg-orange-950/30"
+                                        onClick={() => handleOutForService(incomingBooking.bookingId)}
+                                    >
+                                        Out for Service
+                                    </Button>
+                                    <Button
+                                        disabled={!outForService || !arrivedNearby || arrivedAtDestination}
+                                        variant="outline"
+                                        size="sm"
+                                        className="cursor-pointer"
+                                        onClick={handleStartWorking}
+                                    >
+                                        Arrived
+                                    </Button>
+                                    <Button
+                                        disabled={workDoneInterval !== 0 || !arrivedAtDestination || isWorkDoneClicked}
+                                        variant="outline"
+                                        size="sm"
+                                        className="cursor-pointer border-green-200 text-green-600 hover:bg-green-50 dark:border-green-900/50 dark:hover:bg-green-950/30"
+                                        onClick={handleWorkDone}
+                                    >
+                                        {workDoneInterval !== 0 ? `${workDoneInterval}s` : "Done"}
+                                    </Button>
+                                </>
+                            ) : (
+                                <Button size="sm">Customer Buttons</Button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     )
 }

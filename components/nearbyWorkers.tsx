@@ -1,51 +1,79 @@
+"use client";
+
 import {
-    Card,
-    CardAction,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-  } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
-import { IndianRupeeIcon, MapPinIcon, NotepadText, StarIcon } from "lucide-react"
-import { Button } from "./ui/button"
+  Card,
+  CardContent,
+  CardHeader,
+} from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { IndianRupee, MapPin, Briefcase, Star, ArrowRight } from "lucide-react";
+import { Button } from "./ui/button";
 
-
-export const NearbyWorkers = (
-    { avatar, name, experience, distance, ratings, serviceCharge, sendBookingRequest, workerId }
-    : { avatar: string, name: string, experience: string, distance: string, ratings: number,
-         serviceCharge: number, sendBookingRequest: (workerId: string) => void, workerId: string }) => {
-    
-
-    return (
-     <Card className="md:w-[410px]">
-        <CardHeader className="flex flex-row">
-            <Avatar className="w-20 h-20 bg-red-400">
-                <AvatarImage className="object-cover" src={avatar ?? "https://github.com/shadcn.png"} alt={name} />
-                <AvatarFallback className="bg-red-400">NA</AvatarFallback>
-            </Avatar>
-            <CardContent className=" p-1">
-            <CardTitle>{name}</CardTitle>
-            <CardDescription className="flex flex-row text-xs gap-4 md:gap-8 w-full mt-4 items-center">
-                <div className="flex gap-1 flex-col items-center">
-                <MapPinIcon className="size-4 text-blue-500" /> {distance}
-                </div>
-                <div className="flex gap-1 flex-col items-center">
-                <NotepadText className="size-4 text-green-500" /> {experience}
-                </div>
-                <div className="flex gap-1 flex-col items-center">
-                <StarIcon className="size-4 text-yellow-500" /> {ratings}
-                </div>
-                <div className="flex gap-1 flex-col items-center">
-                <IndianRupeeIcon className="size-4 text-red-500" /> {serviceCharge}/Day
-                </div>
-            </CardDescription>
-
-            <CardAction className="self-center w-full mt-4 ml-3">
-                <Button variant="outline" size="sm" className="w-full" onClick={(()=> sendBookingRequest(workerId))}>Book Now</Button>
-            </CardAction>
-            </CardContent>
-        </CardHeader>
-     </Card>   
-    )
-}
+export const NearbyWorkers = ({
+  avatar,
+  name,
+  experience,
+  distance,
+  ratings,
+  serviceCharge,
+  sendBookingRequest,
+  workerId,
+}: {
+  avatar: string;
+  name: string;
+  experience: string;
+  distance: string;
+  ratings: number;
+  serviceCharge: number;
+  sendBookingRequest: (workerId: string) => void;
+  workerId: string;
+}) => {
+  return (
+    <Card className="h-full overflow-hidden border-border/50 transition-all duration-300 hover:border-orange-500/30 hover:shadow-xl group">
+      <CardHeader className="flex flex-row gap-4 pb-2">
+        <Avatar className="size-16 md:size-20 shrink-0 border-2 border-orange-500/20 transition-colors group-hover:border-orange-500/40">
+          <AvatarImage
+            className="object-cover"
+            src={avatar ?? "https://github.com/shadcn.png"}
+            alt={name}
+          />
+          <AvatarFallback className="bg-orange-500/10 text-orange-600 font-semibold">
+            {name.charAt(0).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        <CardContent className="flex-1 p-0 min-w-0">
+          <h3 className="font-semibold text-foreground text-lg truncate">{name}</h3>
+          <div className="flex flex-wrap gap-3 md:gap-4 mt-2 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <MapPin className="size-4 text-orange-500 shrink-0" />
+              {distance}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Briefcase className="size-4 text-orange-500 shrink-0" />
+              {experience} yrs
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Star className="size-4 text-orange-500 shrink-0 fill-orange-500/30" />
+              {ratings}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <IndianRupee className="size-4 text-orange-500 shrink-0" />
+              {serviceCharge}/day
+            </span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-4 w-full cursor-pointer border-orange-500/30 text-orange-600 hover:bg-orange-500/10 hover:border-orange-500/50 hover:text-orange-600 transition-all duration-300 group/btn"
+            onClick={() => sendBookingRequest(workerId)}
+          >
+            <span className="flex items-center gap-2">
+              Book Now
+              <ArrowRight className="size-4 group-hover/btn:translate-x-0.5 transition-transform" />
+            </span>
+          </Button>
+        </CardContent>
+      </CardHeader>
+    </Card>
+  );
+};

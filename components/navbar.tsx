@@ -48,7 +48,7 @@ export function NavigationBar() {
     },
     {
       name: "Contact Us",
-      link: "/contact-us",
+      link: "/contact",
     },
   ];
 

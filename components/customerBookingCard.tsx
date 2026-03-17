@@ -1,103 +1,185 @@
-'use client'
-import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+"use client";
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "./ui/button";
 import { useCustomerStore } from "@/store/useCustomerStore";
 import { useEffect, useState } from "react";
 import { calculateDistance, formatDistance } from "@/helpers/calculateDistance";
 import { Spinner } from "./ui/spinner";
-import { ArrowRight } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  MapPin,
+  Clock,
+  CreditCard,
+  FileText,
+} from "lucide-react";
 import Link from "next/link";
 
-
 export const CustomerBookingCard = () => {
-    const {
-        bookingDetails,
-        isBookingsent,
-        isBookingAccepted,
-        isBookingRejected,
-        isWorkerArrived,
-        isWorkerOnTheWay,
-        workerCurrentLocation,
-        requestedPaymentAmount,
-        trackingBookingId,
-        yourOTP,
-    } = useCustomerStore();
-    const [distance, setDistance] = useState<string>("");
+  const {
+    bookingDetails,
+    isBookingsent,
+    isBookingAccepted,
+    isBookingRejected,
+    isWorkerArrived,
+    isWorkerOnTheWay,
+    workerCurrentLocation,
+    requestedPaymentAmount,
+    trackingBookingId,
+    yourOTP,
+  } = useCustomerStore();
+  const [distance, setDistance] = useState<string>("");
 
+  useEffect(() => {
+    if (!workerCurrentLocation || !bookingDetails) return;
+    (async () => {
+      const dist = await calculateDistance(
+        Number(bookingDetails?.custLocation.latitude ?? 0),
+        Number(bookingDetails?.custLocation.longitude ?? 0),
+        Number(workerCurrentLocation?.latitude ?? 0),
+        Number(workerCurrentLocation?.longitude ?? 0)
+      );
+      setDistance(formatDistance(dist));
+    })();
+  }, [workerCurrentLocation, bookingDetails]);
 
-    // Calculate distance between customer and worker
-    useEffect(() => {
-        if (!workerCurrentLocation || !bookingDetails) return;
-        (async () => {
-            const dist = await calculateDistance(
-                Number(bookingDetails?.custLocation.latitude ?? 0),
-                Number(bookingDetails?.custLocation.longitude ?? 0),
-                Number(workerCurrentLocation?.latitude ?? 0),
-                Number(workerCurrentLocation?.longitude ?? 0)
-            );
-            setDistance(formatDistance(dist));
-        })()
-    }, [workerCurrentLocation, bookingDetails])
+  const canPay = requestedPaymentAmount > 0 && requestedPaymentAmount !== null;
 
+  return (
+    <Card className="overflow-hidden border-border/50 shadow-lg">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-xl">Booking Details</CardTitle>
+        <CardDescription>
+          Track your booking status and make payment when requested.
+        </CardDescription>
+      </CardHeader>
 
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Booking Details</CardTitle>
-            </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="flex items-start gap-3 rounded-lg bg-muted/50 p-4">
+            <FileText className="size-5 text-orange-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                Profession
+              </p>
+              <p className="font-medium">
+                {(bookingDetails?.workNeededProfession ?? "")
+                  .charAt(0)
+                  .toUpperCase() +
+                  (bookingDetails?.workNeededProfession ?? "").slice(1).toLowerCase()}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 rounded-lg bg-muted/50 p-4">
+            <CreditCard className="size-5 text-orange-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                Price Range
+              </p>
+              <p className="font-medium">₹{bookingDetails?.priceRange}</p>
+            </div>
+          </div>
+        </div>
 
-            <CardContent className="flex md:flex-row flex-col md:items-center md:justify-between gap-2 items-start justify-start">
-                <CardDescription>
-                    <p>Profession: {(bookingDetails?.workNeededProfession ?? "").charAt(0).toUpperCase() + (bookingDetails?.workNeededProfession ?? "").slice(1).toLowerCase()}</p>
-                    <p>Description: {bookingDetails?.workNeededDescription}</p>
-                    <p>Price Range: ₹{bookingDetails?.priceRange}</p>
-                    <p>Distance from you: {distance}</p>
-                </CardDescription>
+        <div className="rounded-lg bg-muted/50 p-4">
+          <p className="text-sm font-medium text-muted-foreground mb-1">
+            Description
+          </p>
+          <p className="text-foreground">{bookingDetails?.workNeededDescription}</p>
+        </div>
 
+        {distance && (
+          <div className="flex items-center gap-3 rounded-lg border border-orange-500/20 bg-orange-500/5 p-4">
+            <MapPin className="size-5 text-orange-500 shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                Distance from you
+              </p>
+              <p className="font-medium">{distance}</p>
+            </div>
+          </div>
+        )}
 
-                <CardAction className="mt-5 w-full md:w-auto">
-                    <Button disabled={requestedPaymentAmount <= 0 || requestedPaymentAmount === null} asChild className={`cursor-pointer w-full md:w-auto ${requestedPaymentAmount <= 0 || requestedPaymentAmount === null ? 'opacity-50 cursor-not-allowed' : ''}`} variant="outline">
-                        <Link href={requestedPaymentAmount <= 0 || requestedPaymentAmount === null ? '#' : `/c/payment?amount=${requestedPaymentAmount}${trackingBookingId ? `&bookingId=${trackingBookingId}` : ''}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2" scroll={false}>
-                            Make Payment
-                            <ArrowRight className="size-4 inline-block" />
-                        </Link>
-                    </Button>
-                </CardAction>
-            </CardContent>
-            <CardFooter className="flex flex-col items-center justify-center gap-4">
-                {isBookingRejected ? (
-                    <div className="flex flex-col items-center justify-center gap-4">
-                        <h1 className="text-xl font-semibold text-red-600">Booking rejected by worker, please increase the price range and try again</h1>
-                    </div>
-                ) : isBookingsent && !isBookingAccepted ? (
-                    <div className="flex flex-col items-center justify-center gap-4">
-                        <h1 className="text-xl font-semibold">Wait for the worker to accept the booking</h1>
-                        <Spinner className="size-6" data-icon="inline-start" />
-                    </div>
-                ) : isBookingAccepted && !isWorkerOnTheWay ? (
-                    <div className="flex flex-col items-center justify-center gap-4">
-                        <h1 className="text-xl font-semibold text-green-600">Booking confirmed! Worker has accepted your request.</h1>
-                    </div>
-                ) : isWorkerOnTheWay && !isWorkerArrived ? (
-                    <div className="flex flex-col items-center justify-center gap-4">
-                        <h1 className="text-xl font-semibold text-green-600">Worker is on the way, please wait for them to arrive.</h1>
-                    </div>
-                ) : isBookingRejected ? (
-                    <div className="flex flex-col items-center justify-center gap-4">
-                        <h1 className="text-xl font-semibold text-red-600">Booking rejected by worker, please increase the price range and try again.</h1>
-                    </div>
-                ) : null}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Button
+            disabled={!canPay}
+            asChild
+            size="lg"
+            className={`cursor-pointer flex-1 ${
+              !canPay ? "opacity-50 cursor-not-allowed" : ""
+            } bg-orange-500 hover:bg-orange-600`}
+          >
+            <Link
+              href={
+                canPay
+                  ? `/c/payment?amount=${requestedPaymentAmount}${trackingBookingId ? `&bookingId=${trackingBookingId}` : ""}`
+                  : "#"
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2"
+              scroll={false}
+            >
+              Make Payment
+              <ArrowRight className="size-4" />
+            </Link>
+          </Button>
+        </div>
+      </CardContent>
 
-                {
-                    yourOTP && (
-                        <div className="flex flex-col items-center justify-center gap-2">
-                            <h1 className="text-2xl font-semibold">{yourOTP}</h1>
-                            <p className="text-sm text-muted-foreground">Share this OTP with the worker to complete the service</p>
-                        </div>
-                    )
-                }
+      <CardFooter className="flex flex-col gap-6 border-t border-border/50 bg-muted/20 pt-6">
+        {isBookingRejected ? (
+          <div className="flex flex-col items-center gap-3 text-center">
+            <p className="text-lg font-semibold text-destructive">
+              Booking rejected. Please increase the price range and try again.
+            </p>
+          </div>
+        ) : isBookingsent && !isBookingAccepted ? (
+          <div className="flex flex-col items-center gap-4">
+            <p className="text-lg font-semibold text-foreground">
+              Waiting for worker to accept
+            </p>
+            <Spinner className="size-6 text-orange-500" data-icon="inline-start" />
+          </div>
+        ) : isBookingAccepted && !isWorkerOnTheWay ? (
+          <div className="flex flex-col items-center gap-3">
+            <CheckCircle2 className="size-10 text-green-500" />
+            <p className="text-lg font-semibold text-green-600">
+              Booking confirmed! Worker has accepted.
+            </p>
+          </div>
+        ) : isWorkerOnTheWay && !isWorkerArrived ? (
+          <div className="flex flex-col items-center gap-3">
+            <MapPin className="size-10 text-orange-500 animate-pulse" />
+            <p className="text-lg font-semibold text-foreground">
+              Worker is on the way
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Please wait for them to arrive.
+            </p>
+          </div>
+        ) : null}
 
-            </CardFooter>
-        </Card>
-    )
-}
+        {yourOTP && (
+          <div className="flex flex-col items-center gap-2 p-6 rounded-xl bg-orange-500/10 border-2 border-orange-500/20">
+            <Clock className="size-8 text-orange-500" />
+            <p className="text-2xl font-bold tracking-[0.3em] text-orange-600">
+              {yourOTP}
+            </p>
+            <p className="text-sm text-muted-foreground text-center">
+              Share this OTP with the worker to complete the service
+            </p>
+          </div>
+        )}
+      </CardFooter>
+    </Card>
+  );
+};
