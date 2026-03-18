@@ -172,7 +172,7 @@ export function NavigationBar() {
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() =>
-                      router.push(`/c/profile/${session?.user?._id}`)
+                      router.push(`/${session?.user?.role === "CUSTOMER" ? "c" : "w"}/profile/${session?.user?._id}`)
                     }
                   >
                     Profile
