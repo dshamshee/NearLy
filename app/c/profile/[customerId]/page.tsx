@@ -1,171 +1,67 @@
 import { getUserDetails } from "@/actions/user";
-import Image from "next/image";
-import { Separator } from "@/components/ui/separator";
-import { EditProfileDialog } from "@/components/edit-profile-dialog";
+import { getCustomerBookings } from "@/actions/getCustomerBookings";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { CustomerProfileTabs } from "@/components/customer-profile-tabs";
+import { GetServerSessionHere } from "@/app/api/auth/[...nextauth]/options";
 
-export default async function CustomerProfile({
-  params,
+export default async function CustomerProfilePage({
+    params,
 }: {
-  params: Promise<{ customerId: string }>;
+    params: Promise<{ customerId: string }>;
 }) {
-  const { customerId } = await params;
-  const customer = await getUserDetails(customerId);
+    const { customerId } = await params;
 
-  const formatDate = (date: Date | undefined) => {
-    if (!date) return "N/A";
-    return new Date(date).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
+    const [customer, session, bookingsResult] = await Promise.all([
+        getUserDetails(customerId),
+        GetServerSessionHere(),
+        getCustomerBookings(customerId),
+    ]);
 
-  const formatRole = (role: string) => {
-    return role.charAt(0) + role.slice(1).toLowerCase();
-  };
+    const isOwnProfile =
+        session?.user?._id != null && String(session.user._id) === String(customerId);
 
-  return (
-    <div className="min-h-screen bg-background py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Profile Header Card */}
-        <div className="bg-card rounded-lg shadow-sm border border-border p-6 sm:p-8 mb-6">
-          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-            {/* Avatar */}
-            <div className="relative">
-              {customer.avatar ? (
-                <Image
-                  src={customer.avatar}
-                  alt={customer.name}
-                  width={120}
-                  height={120}
-                  className="rounded-full object-cover border-4 border-primary/20"
+    const bookings = bookingsResult.success && bookingsResult.data ? bookingsResult.data : [];
+
+    const customerData = {
+        _id: customer._id.toString(),
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+        avatar: customer.avatar,
+        role: customer.role,
+        createdAt: customer.createdAt,
+    };
+
+    const bookingsData = bookings.map((b: Record<string, unknown>) => ({
+        _id: (b._id as { toString: () => string }).toString(),
+        bookingDate: b.bookingDate,
+        bookingTime: b.bookingTime,
+        bookingStatus: b.bookingStatus,
+        workNeededDescription: b.workNeededDescription ?? "",
+        workNeededProfession: b.workNeededProfession ?? "",
+        isWorkCompleted: b.isWorkCompleted,
+        workerId: b.workerId,
+    }));
+
+    return (
+        <div className="min-h-screen bg-background">
+            <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <Link
+                    href="/c/dashboard"
+                    className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground py-2 mb-6 transition-colors group"
+                >
+                    <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-0.5" />
+                    Back to Dashboard
+                </Link>
+
+                <CustomerProfileTabs
+                    customer={customerData}
+                    bookings={bookingsData}
+                    isOwnProfile={isOwnProfile}
+                    customerId={customerId}
                 />
-              ) : (
-                <div className="w-[120px] h-[120px] rounded-full bg-primary/10 flex items-center justify-center border-4 border-primary/20">
-                  <span className="text-4xl font-bold text-primary">
-                    {customer.name.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-              )}
             </div>
-
-            {/* User Info */}
-            <div className="flex-1 text-center sm:text-left">
-              <div className="flex items-center justify-center sm:justify-start gap-3 mb-2">
-                <h1 className="text-3xl sm:text-4xl font-bold text-card-foreground">
-                  {customer.name}
-                </h1>
-                <EditProfileDialog
-                  customerId={customerId}
-                  initialData={{
-                    name: customer.name,
-                    phone: customer.phone,
-                    avatar: customer.avatar,
-                  }}
-                />
-              </div>
-              <div className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
-                {formatRole(customer.role)}
-              </div>
-            </div>
-          </div>
         </div>
-
-        {/* Details Card */}
-        <div className="bg-card rounded-lg shadow-sm border border-border p-6 sm:p-8">
-          <h2 className="text-2xl font-semibold text-card-foreground mb-6">
-            Profile Information
-          </h2>
-
-          <div className="space-y-6">
-            {/* Email */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-              <div className="w-full sm:w-48 shrink-0">
-                <span className="text-sm font-medium text-muted-foreground">
-                  Email Address
-                </span>
-              </div>
-              <Separator orientation="vertical" className="hidden sm:block h-6" />
-              <div className="flex-1">
-                <p className="text-base text-card-foreground break-all">
-                  {customer.email}
-                </p>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Phone */}
-            {customer.phone && (
-              <>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                  <div className="w-full sm:w-48 shrink-0">
-                    <span className="text-sm font-medium text-muted-foreground">
-                      Phone Number
-                    </span>
-                  </div>
-                  <Separator orientation="vertical" className="hidden sm:block h-6" />
-                  <div className="flex-1">
-                    <p className="text-base text-card-foreground">
-                      {customer.phone}
-                    </p>
-                  </div>
-                </div>
-                <Separator />
-              </>
-            )}
-
-            {/* Role */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-              <div className="w-full sm:w-48 shrink-0">
-                <span className="text-sm font-medium text-muted-foreground">
-                  Account Type
-                </span>
-              </div>
-              <Separator orientation="vertical" className="hidden sm:block h-6" />
-              <div className="flex-1">
-                <span className="inline-flex items-center px-3 py-1 rounded-md bg-secondary text-secondary-foreground text-sm font-medium">
-                  {formatRole(customer.role)}
-                </span>
-              </div>
-            </div>
-
-            {/* Wallet Balance */}
-            {/* <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-              <div className="w-full sm:w-48 shrink-0">
-                <span className="text-sm font-medium text-muted-foreground">
-                  Wallet Balance
-                </span>
-              </div>
-              <Separator orientation="vertical" className="hidden sm:block h-6" />
-              <div className="flex-1">
-                <span className="inline-flex items-center px-3 py-1 rounded-md bg-secondary text-secondary-foreground text-sm font-medium">
-                  {customer.walletBalance}
-                </span>
-              </div>
-            </div> */}
-
-            {customer.createdAt && (
-              <>
-                <Separator />
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                  <div className="w-full sm:w-48 shrink-0">
-                    <span className="text-sm font-medium text-muted-foreground">
-                      Member Since
-                    </span>
-                  </div>
-                  <Separator orientation="vertical" className="hidden sm:block h-6" />
-                  <div className="flex-1">
-                    <p className="text-base text-card-foreground">
-                      {formatDate(customer.createdAt)}
-                    </p>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+    );
 }
