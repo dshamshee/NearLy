@@ -46,7 +46,7 @@ export const WorkerPaymentCard = () => {
     const handleCashPayment = async () => {
         setVerifyPayment(true);
         setIsPaymentReceived(true);
-        await isWorkCompleted(incomingBooking?.bookingId ?? "", true);
+        await isWorkCompleted(incomingBooking?.bookingId ?? "", true, amount);
         setResetAllStates(true); // Cash: no OTP needed, go straight to End Service
     }
 
@@ -89,7 +89,7 @@ export const WorkerPaymentCard = () => {
                 position: 'top-right',
             });
             // call this server action after verifying the OTP
-            await isWorkCompleted(incomingBooking?.bookingId ?? "", true);
+            await isWorkCompleted(incomingBooking?.bookingId ?? "", true, amount);
             setResetAllStates(true);
             socket.emit('confirm-payment-otp', {bookingId: incomingBooking?.bookingId ?? ""})
             

@@ -1,57 +1,86 @@
+'use client'
+import { getWorkerRecentBookings } from "@/actions/getWorkerRecentBookings";
+import { reverseGeocode } from "@/helpers/calculateDistance";
+import { Bookings } from "@/types/booking";
 import { Calendar, Clock, Briefcase, User, CheckCircle2, XCircle, Clock3 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Spinner } from "./ui/spinner";
 
+function BookingAddress({ lat, lng }: { lat: number; lng: number }) {
+    const [address, setAddress] = useState<string | null>(null);
+    useEffect(() => {
+        reverseGeocode(lat, lng).then(setAddress);
+    }, [lat, lng]);
+    return <>{address ?? "Loading address..."}</>;
+}
 
 export const WorkerRecentBooking = ()=>{
 
+    const [recentBookings, setRecentBookings] = useState<Bookings[]>([]);
+    
+    const [loading, setLoading] = useState(true);
+
+    useEffect(()=>{
+        const fetchRecentBookings = async ()=>{
+            setLoading(true);
+            const result = await getWorkerRecentBookings();
+            if(result.success && result.data){
+                setRecentBookings(result.data as Bookings[]);
+            }
+            setLoading(false);
+        }
+        fetchRecentBookings();
+    }, [])
+
 
     
-    const recentBookings = [
-        {
-            id: '1',
-            customerName: 'John Doe',
-            workDescription: 'Fix leaking pipe in kitchen',
-            profession: 'Plumbing',
-            bookingDate: '2024-01-15',
-            bookingTime: '2024-01-15T10:00:00',
-            status: 'CONFIRMED',
-        },
-        {
-            id: '2',
-            customerName: 'Jane Smith',
-            workDescription: 'Install new electrical outlets',
-            profession: 'Electrical',
-            bookingDate: '2024-01-14',
-            bookingTime: '2024-01-14T14:30:00',
-            status: 'COMPLETED',
-        },
-        {
-            id: '3',
-            customerName: 'Mike Johnson',
-            workDescription: 'Repair broken cabinet door',
-            profession: 'Carpentry',
-            bookingDate: '2024-01-13',
-            bookingTime: '2024-01-13T09:00:00',
-            status: 'PENDING',
-        },
-        {
-            id: '4',
-            customerName: 'Sarah Williams',
-            workDescription: 'Paint living room walls',
-            profession: 'Painting',
-            bookingDate: '2024-01-12',
-            bookingTime: '2024-01-12T11:00:00',
-            status: 'COMPLETED',
-        },
-        {
-            id: '5',
-            customerName: 'David Brown',
-            workDescription: 'Deep clean entire apartment',
-            profession: 'Cleaning',
-            bookingDate: '2024-01-11',
-            bookingTime: '2024-01-11T08:00:00',
-            status: 'CANCELLED',
-        },
-    ];
+    // const recentBookings = [
+    //     {
+    //         id: '1',
+    //         customerName: 'John Doe',
+    //         workDescription: 'Fix leaking pipe in kitchen',
+    //         profession: 'Plumbing',
+    //         bookingDate: '2024-01-15',
+    //         bookingTime: '2024-01-15T10:00:00',
+    //         status: 'CONFIRMED',
+    //     },
+    //     {
+    //         id: '2',
+    //         customerName: 'Jane Smith',
+    //         workDescription: 'Install new electrical outlets',
+    //         profession: 'Electrical',
+    //         bookingDate: '2024-01-14',
+    //         bookingTime: '2024-01-14T14:30:00',
+    //         status: 'COMPLETED',
+    //     },
+    //     {
+    //         id: '3',
+    //         customerName: 'Mike Johnson',
+    //         workDescription: 'Repair broken cabinet door',
+    //         profession: 'Carpentry',
+    //         bookingDate: '2024-01-13',
+    //         bookingTime: '2024-01-13T09:00:00',
+    //         status: 'PENDING',
+    //     },
+    //     {
+    //         id: '4',
+    //         customerName: 'Sarah Williams',
+    //         workDescription: 'Paint living room walls',
+    //         profession: 'Painting',
+    //         bookingDate: '2024-01-12',
+    //         bookingTime: '2024-01-12T11:00:00',
+    //         status: 'COMPLETED',
+    //     },
+    //     {
+    //         id: '5',
+    //         customerName: 'David Brown',
+    //         workDescription: 'Deep clean entire apartment',
+    //         profession: 'Cleaning',
+    //         bookingDate: '2024-01-11',
+    //         bookingTime: '2024-01-11T08:00:00',
+    //         status: 'CANCELLED',
+    //     },
+    // ];
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
@@ -90,13 +119,19 @@ export const WorkerRecentBooking = ()=>{
     };
 
 
+
     return(
         <div className="bg-card mt-10 border border-border rounded-lg p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-semibold text-foreground">Recent Bookings</h2>
                 </div>
 
-                {recentBookings.length === 0 ? (
+                {loading ? (
+                    <div className="text-center py-12">
+                        <Spinner className="size-12 text-muted-foreground mx-auto mb-4 animate-spin" />
+                        <p className="text-muted-foreground">Loading recent bookings...</p>
+                    </div>
+                ) : recentBookings.length === 0 ? (
                     <div className="text-center py-12">
                         <Briefcase className="size-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                         <p className="text-muted-foreground">No bookings yet</p>
@@ -108,7 +143,7 @@ export const WorkerRecentBooking = ()=>{
                     <div className="space-y-4">
                         {recentBookings.map((booking) => (
                             <div
-                                key={booking.id}
+                                key={booking.bookingDate.toString() || ''}
                                 className="border border-border rounded-lg p-4 hover:bg-accent/50 transition-colors"
                             >
                                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -118,29 +153,29 @@ export const WorkerRecentBooking = ()=>{
                                                 <div className="flex items-center gap-2 mb-2">
                                                     <User className="size-4 text-muted-foreground" />
                                                     <span className="font-medium text-foreground">
-                                                        {booking.customerName}
+                                                        {booking.customerId.toString().toUpperCase().slice(0, 10)}...{booking.customerId.toString().toUpperCase().slice(-4)}
                                                     </span>
                                                 </div>
                                                 <p className="text-sm text-muted-foreground mb-2">
-                                                    {booking.workDescription}
+                                                    <BookingAddress lat={Number(booking.customerLatitude)} lng={Number(booking.customerLongitude)} />
                                                 </p>
                                                 <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                                                     <span className="flex items-center gap-1.5">
                                                         <Briefcase className="size-4" />
-                                                        {booking.profession}
+                                                        {booking.workNeededProfession}
                                                     </span>
                                                     <span className="flex items-center gap-1.5">
                                                         <Calendar className="size-4" />
-                                                        {formatDate(booking.bookingDate)}
+                                                        {formatDate(booking.bookingDate.toString() || '')}
                                                     </span>
                                                     <span className="flex items-center gap-1.5">
                                                         <Clock className="size-4" />
-                                                        {formatTime(booking.bookingTime)}
+                                                        {formatTime(booking.bookingTime.toString() || '')}
                                                     </span>
                                                 </div>
                                             </div>
                                             <div className="shrink-0">
-                                                {getStatusBadge(booking.status)}
+                                                {getStatusBadge(booking.bookingStatus as string)}
                                             </div>
                                         </div>
                                     </div>

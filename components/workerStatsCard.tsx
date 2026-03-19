@@ -1,9 +1,17 @@
 import { Briefcase, IndianRupeeIcon } from "lucide-react"
+import { LoadingSkeleton } from "./loadingSkeleton";
+import { getWorkerDetails } from "@/actions/getWorkerDetails";
 
-export const WorkerStatsCard = () => {
+export const WorkerStatsCard = async () => {
 
-    const totalEarnings = 125000;
-    const totalBookings = 47;
+    const result = await getWorkerDetails();
+
+    // if (!result.success || !result.data) {
+    //     return <LoadingSkeleton />
+    // }
+
+    const totalEarnings = result.data.totalEarnings ?? 0;
+    const totalBookings = result.data.totalBookings ?? 0;
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

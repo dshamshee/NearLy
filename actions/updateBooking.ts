@@ -3,6 +3,7 @@ import dbConnect from "@/utils/dbConnection"
 import BookingModel from "@/models/booking"
 import { GetServerSessionHere } from "@/app/api/auth/[...nextauth]/options"
 import { Response } from "@/types/response"
+import WorkerModel from "@/models/worker"
 
 export const updateBookingStatus = async (bookingId: string, status: "ACCEPTED" | "REJECTED" | "CANCELLED" | "COMPLETED")=>{
     try {
@@ -78,7 +79,7 @@ export const isWorkerOutForService = async (bookingId: string, status: boolean)=
     }
 }
 
-export const isWorkCompleted = async (bookingId: string, status: boolean)=>{
+export const isWorkCompleted = async (bookingId: string, status: boolean, amount: number)=>{
 
     try {
         await dbConnect();
@@ -90,7 +91,21 @@ export const isWorkCompleted = async (bookingId: string, status: boolean)=>{
                 statusCode: 401
             }
         }
-        const updatedBooking = await BookingModel.findOneAndUpdate({_id: bookingId}, {$set: {isWorkCompleted: status}})
+        const updatedBooking = await BookingModel.findOneAndUpdate({_id: bookingId}, {$set: {isWorkCompleted: status, bookingStatus: "COMPLETED"}})
+        const updateWorker = await WorkerModel.findOne({userId: session?.user?._id})
+        if(!updateWorker){
+            return <Response>{
+                success: false,
+                message: "Worker not found",
+                statusCode: 404,
+            }
+        }
+
+
+        updateWorker.totalEarnings = (updateWorker.totalEarnings ?? 0) + amount;
+        updateWorker.totalBookings = (updateWorker.totalBookings ?? 0) + 1;
+        await updateWorker.save();
+
         if(!updatedBooking){
             return <Response> {
                 success: false,
