@@ -8,7 +8,7 @@ import { Searching } from "@/components/searching";
 import { useCustomerStore } from "@/store/useCustomerStore";
 import type { CustomerNearbyWorker } from "@/store/useCustomerStore";
 import Image from "next/image";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
 import { useSocket } from "@/utils/socketContext";
@@ -30,10 +30,20 @@ import { CustomerBookingCard } from "@/components/customerBookingCard";
 import { generatePaymentOTP } from "@/actions/generatePaymentOTP";
 import { calculateDistance, formatDistance } from "@/helpers/calculateDistance";
 import { motion } from "motion/react";
+import { Bookings } from "@/types/booking";
+import { getCustomerRecentProfessionals } from "@/actions/getCustomerRecentProfessional";
 
 export type NearbyWorkerType = CustomerNearbyWorker;
 
 export default function CustomerDashboard() {
+
+  type RecentProfessionalItem = Bookings & {
+    _id?: unknown;
+    workerId?: { _id?: unknown; name?: string; avatar?: string; email?: string };
+    professional?: { experienceYears?: number; averageRating?: number };
+  };
+  const [recentProfessionals, setRecentProfessionals] = useState<RecentProfessionalItem[]>([]);
+
   const {
     mapLoaded,
     setMapLoaded,
@@ -337,6 +347,20 @@ export default function CustomerDashboard() {
     getNearbyWorkers();
   }, [bookingDetails, mapLoaded]);
 
+  useEffect(()=>{
+    (async()=>{
+      const response = await getCustomerRecentProfessionals();
+      if(response.success && response.data){
+        console.log("Recent Bookings: ",response.data);
+        setRecentProfessionals(response.data as RecentProfessionalItem[]);
+      } else {
+        toast.error(response.message as string, {
+          position: "top-right",
+        });
+      }
+    })()
+  }, [])
+
   const sendBookingRequest = async (workerId: string) => {
     if (!socket || !isConnected) {
       toast.error("Not connected to server. Please wait...");
@@ -581,7 +605,7 @@ export default function CustomerDashboard() {
         </section>
       )}
 
-      {!mapLoaded && (
+      {recentProfessionals.length > 0 && !isBookingsent && (
         <section className="py-12 md:py-20 px-4 md:px-8 bg-muted/30">
           <div className="max-w-6xl mx-auto">
             <motion.div
@@ -598,7 +622,7 @@ export default function CustomerDashboard() {
               </p>
             </motion.div>
             <motion.div
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6"
               initial="initial"
               whileInView="animate"
               viewport={{ once: true, margin: "-50px" }}
@@ -612,24 +636,22 @@ export default function CustomerDashboard() {
                 },
               }}
             >
-              {[
-                { name: "Mehul Dalvadi", avatar: "https://github.com/shadcn.png", experience: 10, location: 4, rating: 4.5 },
-                { name: "Sivaniba Bhadoriya", avatar: "https://github.com/shadcn.png", experience: 5, location: 2, rating: 4.0 },
-                { name: "Vivek Dave", avatar: "https://github.com/shadcn.png", experience: 3, location: 1, rating: 3.5 },
-              ].map((pro) => (
+              {recentProfessionals.map((booking) => (
                 <motion.div
-                  key={pro.name}
+                  key={`${booking.workerId?._id ?? ""}-${booking.bookingTime ?? ""}`}
                   variants={{
                     initial: { opacity: 0, y: 20 },
                     animate: { opacity: 1, y: 0 },
                   }}
                 >
                   <RecentProfessionals
-                    name={pro.name}
-                    avatar={pro.avatar}
-                    experience={pro.experience}
-                    location={pro.location}
-                    rating={pro.rating}
+                    name={booking.workerId?.name ?? ""}
+                    avatar={booking.workerId?.avatar ?? ""}
+                    profession={booking.workNeededProfession ?? ""}
+                    experience={booking.professional?.experienceYears ?? 0}
+                    rating={booking.professional?.averageRating ?? 0}
+                    bookingDate= {booking.bookingDate?.toString() ?? ""}
+                    workerId={booking.workerId?._id?.toString() ?? ""}
                   />
                 </motion.div>
               ))}

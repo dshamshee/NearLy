@@ -6,9 +6,9 @@ export const WorkerStatsCard = async () => {
 
     const result = await getWorkerDetails();
 
-    // if (!result.success || !result.data) {
-    //     return <LoadingSkeleton />
-    // }
+    if (!result.success || !result.data) {
+        return <LoadingSkeleton />
+    }
 
     const totalEarnings = result.data.totalEarnings ?? 0;
     const totalBookings = result.data.totalBookings ?? 0;
