@@ -13,31 +13,28 @@ const publicPaths = [
     '/about',
     '/services',
     '/contact',
+    '/api/worker/togglestatus/:workerId',
     // "/user/*/profile", // Example: another dynamic path
   ];
   
   function matchesPath(pathname: string, pattern: string): boolean {
-    // Convert pattern with wildcards to regex
+    // Convert pattern to regex: * and :param for dynamic segments
     const regexPattern = pattern
-      .replace(/\*/g, "[^/]+") // Replace * with one or more non-slash characters
-      .replace(/\//g, "\\/"); // Escape forward slashes
+      .replace(/\*/g, "[^/]+")
+      .replace(/:[^/]+/g, "[^/]+") // Replace :param with one or more non-slash characters
+      .replace(/\//g, "\\/");
   
     const regex = new RegExp(`^${regexPattern}$`);
-  
     return regex.test(pathname);
   }
   
   function isPublicPath(pathname: string): boolean {
-    // Check for root path
     if (pathname === "/") return true;
   
-    // Check against all public paths (including dynamic ones)
     return publicPaths.some((path) => {
-      if (path.includes("*")) {
+      if (path.includes("*") || path.includes(":")) {
         return matchesPath(pathname, path);
       }
-  
-      // Exact match or path starts with the public path followed by a slash
       return pathname === path || pathname.startsWith(path + "/");
     });
   }
