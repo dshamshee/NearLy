@@ -1,6 +1,13 @@
 import { getServerSession, NextAuthOptions, Session } from "next-auth";
 import { JWT } from "next-auth/jwt";
 import GoogleProvider from "next-auth/providers/google";
+
+/** Returns Unix timestamp (seconds) for the next midnight (00:00) in server local timezone */
+function getNextMidnightSeconds(): number {
+  const now = new Date();
+  const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+  return Math.floor(nextMidnight.getTime() / 1000);
+}
 import CredentialsProvider from "next-auth/providers/credentials";
 import { cookies } from "next/headers";
 import mongoose from "mongoose";
@@ -55,6 +62,12 @@ export const authOptions: NextAuthOptions = {
     // ...add more providers here
   ],
 
+
+  session: {
+    // Session expires at midnight (00:00) every night - actual exp set in jwt callback
+    maxAge: 24 * 60 * 60, // Fallback: max 24h (jwt callback overrides with next-midnight exp)
+    updateAge: 24 * 60 * 60, // Don't extend session on activity - expires at fixed midnight
+  },
 
   pages: {
     error: "/login", // Redirect errors to login page
@@ -155,6 +168,10 @@ export const authOptions: NextAuthOptions = {
     },
 
     async jwt({ token, account, user }) {
+        // Expire session at midnight every night (set on sign-in)
+        if (user) {
+            token.exp = getNextMidnightSeconds();
+        }
         // Store role in token if available from account (set in signIn callback)
         if (account?.role) {
             token.role = account.role as "CUSTOMER" | "WORKER" | "ADMIN";

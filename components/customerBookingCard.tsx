@@ -110,17 +110,17 @@ export const CustomerBookingCard = () => {
 
         <div className="flex flex-col sm:flex-row gap-4">
           <Button
-            disabled={!canPay}
+            disabled={!canPay || !trackingBookingId}
             asChild
             size="lg"
             className={`cursor-pointer flex-1 ${
-              !canPay ? "opacity-50 cursor-not-allowed" : ""
+              !canPay || !trackingBookingId ? "opacity-50 cursor-not-allowed" : ""
             } bg-orange-500 hover:bg-orange-600`}
           >
             <Link
               href={
-                canPay
-                  ? `/c/payment?amount=${requestedPaymentAmount}${trackingBookingId ? `&bookingId=${trackingBookingId}` : ""}`
+                canPay && trackingBookingId
+                  ? `/c/payment?bookingId=${trackingBookingId}`
                   : "#"
               }
               target="_blank"

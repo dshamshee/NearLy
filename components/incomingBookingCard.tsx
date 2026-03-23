@@ -55,14 +55,6 @@ export const IncomingBookingCard = ({ type }: { type: "worker" | "customer" }) =
     const workDoneIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     // Stop location sharing when worker arrives at destination
-    // useEffect(() => {
-    //     if (arrivedAtDestination && locationIntervalRef.current) {
-    //         clearInterval(locationIntervalRef.current);
-    //         locationIntervalRef.current = null;
-    //     }
-    // }, [arrivedAtDestination])
-
-    // Stop location sharing when worker arrives at destination
     useEffect(() => {
         if (arrivedAtDestination && locationIntervalRef.current) {
             clearInterval(locationIntervalRef.current);

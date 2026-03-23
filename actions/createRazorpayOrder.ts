@@ -5,6 +5,11 @@ type CreateOrderSuccess = { success: true; data: { id: string; amount: number };
 type CreateOrderError = { success: false; message: string; statusCode: number; error?: string }
 type CreateOrderResult = CreateOrderSuccess | CreateOrderError
 
+/**
+ * @deprecated Use POST /api/payment/create-order instead. This action accepts a client-supplied
+ * amount which is insecure (tamperable). The create-order API fetches the amount server-side from
+ * the booking record.
+ */
 export const createRazorpayOrder = async (amount: number): Promise<CreateOrderResult> =>{
 
     try {
