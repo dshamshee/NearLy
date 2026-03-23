@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { LoadingSkeleton } from "@/components/loadingSkeleton";
+import { RouteAwareSuspenseFallback } from "@/components/routeAwareSuspenseFallback";
 
 
 
@@ -16,7 +16,7 @@ export default function CustomerLayout({
 
   
     return (
-            <Suspense fallback={<LoadingSkeleton />}>
+            <Suspense fallback={<RouteAwareSuspenseFallback />}>
             {children}
             {modal}
             </Suspense>
