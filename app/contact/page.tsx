@@ -28,20 +28,20 @@ const contactInfo = [
   {
     icon: Phone,
     label: "Phone",
-    value: "+1 (555) 123-4567",
-    href: "tel:+15551234567",
+    value: "+91 9430856365",
+    href: "tel:+919430856365",
   },
   {
     icon: MapPin,
     label: "Office",
-    value: "123 Service Street, Your City",
-    href: "#",
+    value: "Parul University, Vadodara, Gujarat, India",
+    href: "https://www.google.com/maps/place/Parul+University/@22.304961,73.203215,15z/data=!4m6!3m5!1s0x395fc8b14f860151:0x7673597938955754!8m2!3d22.304961!4d73.203215!16s%2Fg%2F11c48cslhz?entry=ttu&g_ep=EgoyMDI2MDIxMi4wIKXMDSoASAFQAw%3D%3D",
   },
   {
     icon: Clock,
     label: "Support Hours",
-    value: "Mon–Fri 9am–6pm, Sat 10am–4pm",
-    href: "#",
+    value: "24/7",
+    href: "mailto:support@nearly.app",
   },
 ];
 
