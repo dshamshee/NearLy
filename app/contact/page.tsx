@@ -17,6 +17,8 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useState } from "react";
+import axios, { AxiosError } from "axios";
+import { toast } from "sonner";
 
 const contactInfo = [
   {
@@ -48,14 +50,46 @@ const contactInfo = [
 export default function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [data, setData] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+  });
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    // Simulate form submission
-    await new Promise((r) => setTimeout(r, 1500));
-    setIsSubmitting(false);
-    setSubmitted(true);
+    try {
+      e.preventDefault();
+      setIsSubmitting(true);
+      // Simulate form submission
+      // await new Promise((r) => setTimeout(r, 1500));
+  
+      // send the data to the server
+      const response = await axios.post('/api/getUserQuery', data);
+      if(response.data.success){
+        setIsSubmitting(false);
+        setSubmitted(true);
+        toast.success(response.data.message);
+        setData({
+          name: "",
+          email: "",
+          subject: "",
+          message: "",
+        });
+      }
+      else{
+        setIsSubmitting(false);
+        setError(response.data.message);
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      if(error instanceof AxiosError) toast.error(error.response?.data.message || "An error occurred during submission");
+      else toast.error("Something went wrong");
+    } finally {
+      setIsSubmitting(false);
+    }
+
   };
 
   return (
@@ -215,6 +249,7 @@ export default function ContactPage() {
                               name="name"
                               placeholder="Your name"
                               required
+                              onChange={(e) => setData({ ...data, name: e.target.value })}
                               className="transition-all duration-200 focus:ring-2 focus:ring-orange-500/20"
                             />
                           </div>
@@ -226,6 +261,7 @@ export default function ContactPage() {
                               type="email"
                               placeholder="you@example.com"
                               required
+                              onChange={(e) => setData({ ...data, email: e.target.value })}
                               className="transition-all duration-200 focus:ring-2 focus:ring-orange-500/20"
                             />
                           </div>
@@ -238,6 +274,7 @@ export default function ContactPage() {
                             name="subject"
                             placeholder="What is this regarding?"
                             required
+                            onChange={(e) => setData({ ...data, subject: e.target.value })}
                             className="transition-all duration-200 focus:ring-2 focus:ring-orange-500/20"
                           />
                         </div>
@@ -250,6 +287,7 @@ export default function ContactPage() {
                             placeholder="Tell us how we can help..."
                             rows={5}
                             required
+                            onChange={(e) => setData({ ...data, message: e.target.value })}
                             className="transition-all duration-200 focus:ring-2 focus:ring-orange-500/20 resize-none"
                           />
                         </div>

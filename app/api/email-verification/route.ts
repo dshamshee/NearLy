@@ -12,7 +12,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("I am here to singup")
+    // console.log("I am here to singup")
     // Validate request body
     const body = await request.json();
     const { email, name } = body;
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     );
 
     const { data, error } = await resend.emails.send({
-      from: "nearly@ak-diagnostic.in",
+      from: "noreply@nearly.id0.uk",
       to: email,
       subject: "Email Verification Code from NearLy",
       html: emailHtml,

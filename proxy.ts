@@ -14,6 +14,7 @@ const publicPaths = [
     '/services',
     '/contact',
     '/api/worker/togglestatus/:workerId',
+    '/api/getUserQuery',
     // "/user/*/profile", // Example: another dynamic path
   ];
   
