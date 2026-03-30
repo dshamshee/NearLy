@@ -26,6 +26,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { useSocket } from "@/utils/socketContext";
+
 export function NavigationBar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { setTheme } = useTheme();
@@ -69,50 +70,8 @@ export function NavigationBar() {
       <NavBody>
         {/* <NavbarLogo /> */}
         <h1 className="text-2xl font-bold flex items-center gap-1">
-          {/* <svg
-            className="w-10 h-10 LogoIcon"
-            viewBox="0 0 100 100"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M50 15C30.67 15 15 30.67 15 50C15 65.45 25.02 78.55 39 83.33V72.58C30.94 68.49 25.5 60 25.5 50C25.5 36.47 36.47 25.5 50 25.5C63.53 25.5 74.5 36.47 74.5 50C74.5 60 69.06 68.49 61 72.58V83.33C74.98 78.55 85 65.45 85 50C85 30.67 69.33 15 50 15Z"
-              fill="url(#paint0_linear)"
-            />
-
-            <path
-              d="M42 40V60H46.5V51L53.5 60H58V40H53.5V49L46.5 40H42Z"
-              fill="url(#paint1_linear)"
-            />
-
-            <circle cx="50" cy="88" r="6" fill="#FF8C00" />
-
-            <defs>
-              <linearGradient
-                id="paint0_linear"
-                x1="15"
-                y1="15"
-                x2="85"
-                y2="85"
-                gradientUnits="userSpaceOnUse"
-              >
-                <stop stopColor="#2DD4BF" />{" "}
-                <stop offset="1" stopColor="#0891B2" />{" "}
-              </linearGradient>
-              <linearGradient
-                id="paint1_linear"
-                x1="42"
-                y1="40"
-                x2="58"
-                y2="60"
-                gradientUnits="userSpaceOnUse"
-              >
-                <stop stopColor="#FF8C00" />
-                <stop offset="1" stopColor="#FF6900" />
-              </linearGradient>
-            </defs>
-          </svg> */}
-          <Image src="/logo.png" alt="logo" width={40} height={40} />
+         
+          <Image src="/logo2.png" alt="logo" width={40} height={40} />
           <div className="text-xl">
             <span className="text-foreground">Near</span>
             <span className="text-orange-500">Ly</span>
@@ -124,7 +83,7 @@ export function NavigationBar() {
           <NavbarButton variant="secondary">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="rounded-full" size="icon">
+                <Button variant="outline" className="rounded-full" size="icon-sm">
                   <Sun className="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
                   <Moon className="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
                   <span className="sr-only">Toggle theme</span>
@@ -143,7 +102,7 @@ export function NavigationBar() {
               </DropdownMenuContent>
             </DropdownMenu>
           </NavbarButton>
-          <NavbarButton variant="secondary">
+          <NavbarButton variant="secondary" >
             {session ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -185,7 +144,7 @@ export function NavigationBar() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button className="cursor-pointer" variant="secondary" onClick={() => router.push("/login")}>
+              <Button className="cursor-pointer px-4 py-0 " variant="default" size={'sm'} onClick={() => router.push("/login")}>
                 Login
               </Button>
             )}

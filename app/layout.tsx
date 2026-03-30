@@ -48,13 +48,10 @@ export default async function RootLayout({
         >
           <SessionWrapper>
             <SocketProvider>
-              {/* {
-                session ? <NavigationBar /> : null
-              } */}
               <NavigationBar />
-            {children}
-            <Footer />
-            <Toaster />
+              <main className="relative min-h-screen">{children}</main>
+              <Footer />
+              <Toaster />
             </SocketProvider>
           </SessionWrapper>
         </ThemeProvider>

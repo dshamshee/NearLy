@@ -36,7 +36,7 @@ export default function Home() {
   return (
     <div className="relative w-full bg-background font-sans min-h-screen">
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-24 pb-16 md:pt-24 md:pb-24 px-4 md:px-8">
+      <section className="relative overflow-hidden pt-32 pb-16 md:pt-40 md:pb-24 px-4 md:px-8">
         <div className="absolute inset-0 bg-linear-to-b from-muted/30 via-transparent to-transparent" />
         <div className="absolute top-20 right-0 w-72 h-72 bg-orange-500/5 rounded-full blur-3xl" />
         <div className="absolute bottom-20 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
@@ -533,17 +533,17 @@ export default function Home() {
             {[
               {
                 quote: "Found a plumber in under 10 minutes. Professional, on time, and fixed the leak in no time. NearLy is a game-changer!",
-                name: "Sarah M.",
+                name: "Sarah Khan.",
                 role: "Homeowner",
               },
               {
                 quote: "I needed an electrician urgently. The app matched me with someone nearby who came within the hour. Highly recommend.",
-                name: "James K.",
+                name: "Amit Kumar.",
                 role: "Small Business Owner",
               },
               {
                 quote: "Transparent pricing, verified professionals, and easy booking. No more endless searching or waiting for callbacks.",
-                name: "Aisha R.",
+                name: "Aisha Riaz.",
                 role: "Homeowner",
               },
             ].map((item, i) => (

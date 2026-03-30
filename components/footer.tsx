@@ -1,45 +1,56 @@
-import { IconBrandGithub, IconBrandInstagram, IconBrandLinkedin, IconBrandX } from "@tabler/icons-react"
-import Link from "next/link"
+import {
+  IconBrandGithub,
+  IconBrandInstagram,
+  IconBrandLinkedin,
+  IconBrandX,
+} from "@tabler/icons-react";
+import Link from "next/link";
+
+const iconClass =
+  "size-5 text-muted-foreground transition-colors hover:text-foreground";
 
 export const Footer = () => {
-
-    return (
-
-        <div className="mainContainer bg-gray-100 py-5  mt-10">
-
-
-            <div className="flex flex-row items-center justify-around md:gap-14 gap-4 text-sm md:text-base">
-                <div className="links flex flex-row items-center justify-around md:gap-14 gap-4">
-                    <div className="1 flex flex-col items-center justify-around gap-4">
-                        <Link href="/">Home</Link>
-                        <Link href="/about">About</Link>
-                    </div>
-                    <div className="2 flex flex-col items-center justify-around gap-4">
-                        <Link href="/services">Services</Link>
-                        <Link href="/contact">Contact Us</Link>
-                    </div>
-                    <div className="3 flex flex-col items-center justify-around gap-4">
-                        <Link href="/privacy-policy">Privacy Policy</Link>
-                        <Link href="/terms-and-conditions">Terms & Conditions</Link>
-                    </div>
-                </div>
-
-                <div className="socials flex flex-row items-center justify-around md:gap-14 gap-4">
-                    <div className="1 flex flex-col items-center justify-around gap-4">
-                        <Link href="/"><IconBrandGithub className="hover:text-green-600" /></Link>
-                        <Link href="/"><IconBrandX className="hover:text-blue-500" /></Link>
-                    </div>
-                    <div className="2 flex flex-col items-center justify-around gap-4">
-                        <Link href="/"><IconBrandInstagram className="hover:text-pink-500" /></Link>
-                        <Link href="/"><IconBrandLinkedin className="hover:text-blue-500" /></Link>
-                    </div>
-                </div>
-            </div>
-
-            <div className="copyright flex flex-col items-center justify-center mt-10">
-                <p>Copyright © 2026 NearLy. All rights reserved.</p>
-                <p className="text-sm">Developed by <Link href="https://github.com/dshamshee" className="hover:text-blue-500">Danish Shamshee</Link></p>
-            </div>
-        </div>
-    )
-}
+  return (
+    <footer className="border-t border-border ">
+      <div className="mainContainer flex flex-col items-center justify-center gap-1 px-4 py-4">
+        <nav
+          className="flex flex-wrap items-center justify-center gap-3"
+          aria-label="Social links"
+        >
+          <Link
+            href="https://github.com/dshamshee"
+            className="rounded-full p-1.5 outline-offset-2 hover:bg-muted/80 focus-visible:outline-2 focus-visible:outline-ring"
+            aria-label="GitHub"
+          >
+            <IconBrandGithub className={iconClass} aria-hidden />
+          </Link>
+          <Link
+            href="#"
+            className="rounded-full p-1.5 outline-offset-2 hover:bg-muted/80 focus-visible:outline-2 focus-visible:outline-ring"
+            aria-label="X"
+          >
+            <IconBrandX className={iconClass} aria-hidden />
+          </Link>
+          {/* <Link
+            href="#"
+            className="rounded-full p-1.5 outline-offset-2 hover:bg-muted/80 focus-visible:outline-2 focus-visible:outline-ring"
+            aria-label="Instagram"
+          >
+            <IconBrandInstagram className={iconClass} aria-hidden />
+          </Link> */}
+          <Link
+            href="https://linkedin.com/in/danish-shamshee"
+            className="rounded-full p-1.5 outline-offset-2 hover:bg-muted/80 focus-visible:outline-2 focus-visible:outline-ring"
+            aria-label="LinkedIn"
+          >
+            <IconBrandLinkedin className={iconClass} aria-hidden />
+          </Link>
+        </nav>
+        <p className="text-center text-xs text-muted-foreground sm:text-sm">
+          © {new Date().getFullYear()} NearLy. All rights reserved.
+        </p>
+        <p className="text-center text-xs text-muted-foreground sm:text-xs">Developed by Danish Shamshee</p>
+      </div>
+    </footer>
+  );
+};
