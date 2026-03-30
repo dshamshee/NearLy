@@ -71,7 +71,7 @@ export function NavigationBar() {
         {/* <NavbarLogo /> */}
         <h1 className="text-2xl font-bold flex items-center gap-1">
          
-          <Image src="/logo2.png" alt="logo" width={40} height={40} />
+          <Image src="/Logo2.png" alt="logo" width={40} height={40} />
           <div className="text-xl">
             <span className="text-foreground">Near</span>
             <span className="text-orange-500">Ly</span>
