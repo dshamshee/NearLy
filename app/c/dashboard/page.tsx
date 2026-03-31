@@ -405,7 +405,7 @@ export default function CustomerDashboard() {
   const handleCancelIncreasePrice = () => resetAfterRejection();
 
   return (
-    <div className="mainContainer min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mainContainer min-h-screen bg-background mt-18 px-4 py-8 sm:px-6 lg:px-8">
       <div className="hero w-full flex md:flex-row flex-col items-center justify-between gap-10 md:px-16 py-5">
         {!isBookingsent && (
           <>

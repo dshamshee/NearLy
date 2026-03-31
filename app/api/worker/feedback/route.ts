@@ -46,7 +46,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<Response>
         return NextResponse.json<Response>(
             {
                 success: true,
-                message: "Thank you for your feedback, it will help us improve our services.",
+                message: "Thank you for your feedback, it will help us to improve our services.",
                 statusCode: 200,
                 data: null,
             },

@@ -17,7 +17,8 @@ const publicPaths = [
     '/api/getUserQuery',
     '/api/forgot-password',
     '/forgot-password',
-    '/api/worker/feedback'
+    '/api/worker/feedback',
+    '/feedback/:userId',
     // "/user/*/profile", // Example: another dynamic path
   ];
   

@@ -87,7 +87,7 @@ import Link from "next/link";
                 className="h-11 cursor-pointer min-h-[44px] w-full sm:h-9 sm:min-h-0 sm:w-auto px-4 py-2.5 sm:px-3 sm:py-2 rounded-lg text-orange-500 hover:text-orange-600 hover:bg-orange-500/10 group/btn touch-manipulation justify-start sm:self-end transition-colors"
               >
                 <span className="flex items-center gap-2">
-                  <Link href={`/c/dashboard/feedback/${workerId.toString() ?? ""}`} className="w-full">
+                  <Link href={`/feedback/${workerId.toString() ?? ""}`} className="w-full">
                     Give Feedback
                   </Link>
                   <ArrowRight className="size-4 group-hover/btn:translate-x-0.5 transition-transform shrink-0" />
