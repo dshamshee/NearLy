@@ -77,7 +77,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
             {
                 success: false,
-                message: error instanceof Error ? error.message : "Upload failed",
+                message: "Internal Server Error",
+                error: error instanceof Error ? error.message : "Internal Server Error on avatar upload route",
                 statusCode: 500,
             },
             { status: 500 }

@@ -21,7 +21,8 @@ export async function POST(request: NextRequest) {
         if (!data) {
             return NextResponse.json<Response>({
                 success: false,
-                message: "Data are required",
+                message: "Invalid data. Please try again.",
+                error: "Data are required",
                 statusCode: 400,
             }, { status: 400 });
         }
@@ -32,6 +33,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json<Response>({
                 success: false,
                 message: "Worker not found",
+                error: "Worker not found",
                 statusCode: 404
             }, { status: 404 });
         }
@@ -53,7 +55,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json<Response>({
             success: true,
-            message: "Worker Profile updated successfully",
+            message: "Your profile updated successfully",
             statusCode: 200,
         }, { status: 200 });
 
@@ -64,7 +66,8 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json<Response>({
             success: false,
-            message: error instanceof Error ? error.message : "Internal Server Error",
+            message: "Internal Server Error",
+            error: error instanceof Error ? error.message : "Internal Server Error on worker update profile route",
             statusCode: 500,
         }, { status: 500 });
 

@@ -30,7 +30,9 @@ export async function findNearbyWorkers(latitude: number, longitude: number, pro
         .populate('userId',  '_id name email phone avatar')
         .lean();
 
-        if(!workers || workers.length === 0) return null;
+        if (!workers || workers.length === 0) {
+            return [];
+        }
 
         // Convert Mongoose documents to plain objects and handle special types
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -89,6 +91,10 @@ export async function findNearbyWorkers(latitude: number, longitude: number, pro
 
     } catch (error: unknown) {
         console.log("Error in findNearbyWorkers action", error);
-        throw new Error(error instanceof Error ? error.message : "Internal Server Error");
+        throw new Error(
+            error instanceof Error
+                ? error.message
+                : "Internal Server Error on findNearbyWorkers action"
+        );
     }
 }

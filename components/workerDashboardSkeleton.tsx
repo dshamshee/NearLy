@@ -4,7 +4,7 @@ function WorkerDashboardSkeletonContent() {
   return (
     <>
       {/* Welcome section */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row mt-14 sm:items-center sm:justify-between gap-4">
         <div className="space-y-2">
           <Skeleton className="h-9 w-64" />
           <Skeleton className="h-5 w-80" />

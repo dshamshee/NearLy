@@ -16,6 +16,7 @@ export async function updateWorkerStatus(status: boolean, latitude: number, long
             return {
                 success: false,
                 message: "Unauthorized",
+                error: "Unauthorized",
                 statusCode: 401,
             };
         }
@@ -27,6 +28,7 @@ export async function updateWorkerStatus(status: boolean, latitude: number, long
                 success: false,
                 message: "Status is required",
                 statusCode: 400,
+                error: "Status is required",
             };
         }
 
@@ -37,6 +39,7 @@ export async function updateWorkerStatus(status: boolean, latitude: number, long
                 success: false,
                 message: "Worker not found",
                 statusCode: 404,
+                error: "Worker not found",
             };
         }
 
@@ -52,14 +55,18 @@ export async function updateWorkerStatus(status: boolean, latitude: number, long
             success: true,
             message: "Worker status updated successfully",
             statusCode: 200,
+            error: null,
+            data: null,
         };
 
     } catch (error: unknown) {
         console.log("Error in updateWorkerStatus action", error);
         return {
             success: false,
-            message: error instanceof Error ? error.message : "Internal Server Error",
+            message: "Internal Server Error",
+            error: error instanceof Error ? error.message : "Internal Server Error on updateWorkerStatus action",
             statusCode: 500,
+            data: null,
         };
     }
 }

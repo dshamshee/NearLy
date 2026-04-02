@@ -14,6 +14,7 @@ export const getWorker = async (userId: string): Promise<Response> =>{
                 success: false,
                 message: "Worker not found",
                 statusCode: 404,
+                error: "Worker not found",
                 data: null,
             };
         }
@@ -22,11 +23,13 @@ export const getWorker = async (userId: string): Promise<Response> =>{
             message: "Worker fetched successfully",
             statusCode: 200,
             data: JSON.parse(JSON.stringify(worker)),
+            error: null,
         }
     } catch (error: unknown) {
         return {
             success: false,
-            message: error instanceof Error ? error.message : "Internal Server Error",
+            message: "Internal Server Error",
+            error: error instanceof Error ? error.message : "Internal Server Error on getWorker action",
             statusCode: 500,
             data: null,
         };

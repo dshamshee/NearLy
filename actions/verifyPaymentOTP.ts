@@ -49,7 +49,7 @@ export const verifyPaymentOTP = async (type: "CUSTOMER" | "WORKER", bookingId: s
                     statusCode: 400,
                     error: "Invalid OTP on verifyPaymentOTP action",
                     data: null
-                }
+                };
             }
         }
 
@@ -57,23 +57,23 @@ export const verifyPaymentOTP = async (type: "CUSTOMER" | "WORKER", bookingId: s
 
         return {
             success: true,
-            message: "Payment OTP verified successfully",
+            message: "OTP verified successfully",
             statusCode: 200,
             error: null,
             data: null
-        }
+        };
 
 
 
 
-    } catch (error) {
-        console.log("Error in verifyPaymentOTP", error)
+    } catch (error: unknown) {
+        console.log("Error in verifyPaymentOTP action", error);
         return {
             success: false,
-            message: error instanceof Error ? error.message : "Something went wrong",
+            message: "Internal Server Error",
+            error: error instanceof Error ? error.message : "Internal Server Error on verifyPaymentOTP action",
             statusCode: 500,
-            error: error instanceof Error ? error.message : "Something went wrong at verifyPaymentOTP action",
             data: null
-        }
+        };
     }
-}
+};

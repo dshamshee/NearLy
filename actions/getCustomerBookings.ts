@@ -10,12 +10,12 @@ export async function getCustomerBookings(customerId: string) {
 
         const session = await GetServerSessionHere();
         if (!session?.user?._id) {
-            return { success: false, message: "Unauthorized", data: null };
+            return { success: false, message: "Unauthorized", error: "Unauthorized", statusCode: 401, data: null };
         }
 
         const isOwnProfile = String(session.user._id) === String(customerId);
         if (!isOwnProfile) {
-            return { success: false, message: "Forbidden", data: null };
+            return { success: false, message: "Forbidden", error: "Forbidden", statusCode: 403, data: null };
         }
 
         const bookings = await BookingModel.find({ customerId })
@@ -28,12 +28,15 @@ export async function getCustomerBookings(customerId: string) {
             success: true,
             message: "Bookings fetched successfully",
             data: JSON.parse(JSON.stringify(bookings)),
+            statusCode: 200,
         };
     } catch (error) {
         console.error("getCustomerBookings error:", error);
         return {
             success: false,
-            message: error instanceof Error ? error.message : "Failed to fetch bookings",
+            message: "Internal Server Error",
+            error: error instanceof Error ? error.message : "Internal Server Error on getCustomerBookings action",
+            statusCode: 500,
             data: null,
         };
     }

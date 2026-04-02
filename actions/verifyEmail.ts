@@ -31,10 +31,10 @@ export async function verifyEmail(email: string): Promise<Response>{
     } catch (error: unknown) {
         return{
             success: false,
-            message: error instanceof Error ? error.message : "Something went wrong",
+            message: "Internal Server Error",
+            error: error instanceof Error ? error.message : "Internal Server Error on verifyEmail action",
             statusCode: 500,
-            error: error instanceof Error ? error.message : "Something went wrong at verifyEmail action",
-            data: null
+            data: null,
         }
     }
 }

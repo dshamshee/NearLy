@@ -12,7 +12,8 @@ export async function POST(request: NextRequest){
         if(!workerId || status === undefined) {
             return NextResponse.json<Response>({
                 success: false,
-                message: "Worker ID and status are required",
+                message: "Invalid data. Please try again.",
+                error: "Worker ID and status are required",
                 statusCode: 400,
             }, { status: 400 });
         }
@@ -22,6 +23,7 @@ export async function POST(request: NextRequest){
             return NextResponse.json<Response>({
                 success: false,
                 message: "Worker not found",
+                error: "Worker not found",
                 statusCode: 404,
             }, { status: 404 });
         }
@@ -45,7 +47,8 @@ export async function POST(request: NextRequest){
     } catch (error: unknown) {
         return NextResponse.json<Response>({
             success: false,
-            message: error instanceof Error ? error.message : "Internal Server Error on worker status route",
+            message: "Internal Server Error",
+            error: error instanceof Error ? error.message : "Internal Server Error on worker status route",
             statusCode: 500,
         }, { status: 500 });
     }

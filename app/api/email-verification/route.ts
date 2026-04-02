@@ -47,7 +47,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json<Response>(
         {
           success: false,
-          message: "Email service is not configured",
+          message: "Failed to send email. Please try again later.",
+          error: "Email service is not configured",
           statusCode: 500,
         },
         { status: 500 }
@@ -128,9 +129,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json<Response>(
       {
         success: false,
-        message: "Internal Server Error on email verification route",
+        message: "Something went wrong",
         statusCode: 500,
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.message : "Internal Server Error on email verification route",
       },
       { status: 500 }
     );

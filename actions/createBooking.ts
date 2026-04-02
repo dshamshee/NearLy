@@ -42,7 +42,8 @@ export const createBooking = async (booking: {workerId: string, bookingDetails: 
         console.log("Error in createBooking", error)
         return {
             success: false,
-            message: error instanceof Error ? error.message : "Something went wrong at createBooking action",
+            message: "Internal Server Error",
+            error: error instanceof Error ? error.message : "Internal Server Error on createBooking action",
             statusCode: 500
         }
     }

@@ -38,15 +38,24 @@ export const WorkerAvailability = () => {
     const [checkingProfileStatus, setCheckingProfileStatus] = useState<boolean>(true);
 
 
-    // Check if the worker's profile is completed or not 
+    // Check if the worker's profile is completed or not
     useEffect(() => {
         const checkProfileStatus = async () => {
-            // setCheckingProfileStatus(true);
-            const response = await getWorkerProfileStatus();
-            setIsProfileCompleted(response.data!);
-            setCheckingProfileStatus(false);
-        }
-        checkProfileStatus();
+            try {
+                const response = await getWorkerProfileStatus();
+                const completed =
+                    response.success === true &&
+                    typeof response.data === "boolean"
+                        ? response.data
+                        : false;
+                setIsProfileCompleted(completed);
+            } catch {
+                setIsProfileCompleted(false);
+            } finally {
+                setCheckingProfileStatus(false);
+            }
+        };
+        void checkProfileStatus();
 
         if (session?.user?._id) {
             getCurrentCoordinatesWithFallback()

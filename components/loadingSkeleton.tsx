@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 export const LoadingSkeleton = ()=>{
 
     return(
-<div className="flex flex-col items-center justify-center h-screen w-full">
+<div className="flex flex-col items-center justify-center h-screen w-full mt-20">
             <Card className="w-full max-w-3xl">
                 <CardHeader>
                     <Skeleton className="h-4 w-2/3" />

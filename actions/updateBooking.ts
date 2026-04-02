@@ -88,6 +88,7 @@ export const isWorkCompleted = async (bookingId: string, status: boolean, amount
             return <Response> {
                 success: false,
                 message: "Unauthorized",
+                error: "Unauthorized",
                 statusCode: 401
             }
         }
@@ -97,6 +98,7 @@ export const isWorkCompleted = async (bookingId: string, status: boolean, amount
             return <Response>{
                 success: false,
                 message: "Worker not found",
+                error: "Worker not found",
                 statusCode: 404,
             }
         }
@@ -110,19 +112,22 @@ export const isWorkCompleted = async (bookingId: string, status: boolean, amount
             return <Response> {
                 success: false,
                 message: "Booking not found",
+                error: "Booking not found",
                 statusCode: 404
             }
         }
         return <Response>{
             success: true,
-            message: "Work completed status updated successfully",
-            statusCode: 200
+            message: "Your work is completed successfully",
+            statusCode: 200,
+            error: null,
         }
     } catch (error) {
         console.log("Error in isWorkCompleted", error)
         return <Response> {
             success: false,
-            message: error instanceof Error ? error.message : "Something went wrong at isWorkCompleted action",
+            message: "Internal Server Error",
+            error: error instanceof Error ? error.message : "Internal Server Error on isWorkCompleted action",
             statusCode: 500
         }
     }
@@ -136,6 +141,7 @@ export const isWorkerArrived = async (bookingId: string, status: boolean)=>{
             return <Response> {
                 success: false,
                 message: "Unauthorized",
+                error: "Unauthorized",
                 statusCode: 401
             }
         }
@@ -144,19 +150,22 @@ export const isWorkerArrived = async (bookingId: string, status: boolean)=>{
             return <Response> {
                 success: false,
                 message: "Booking not found",
+                error: "Booking not found",
                 statusCode: 404
             }
         }
         return <Response>{
             success: true,
-            message: "Worker arrived at destination status updated successfully",
-            statusCode: 200
+            message: "Worker arrived at destination",
+            statusCode: 200,
+            error: null,
         }
     } catch (error: unknown) {
         console.log("Error in isWorkerArrived", error)
         return {
             success: false,
-            message: error instanceof Error ? error.message : "Something went wrong at isWorkerArrived action",
+            message: "Internal Server Error",
+            error: error instanceof Error ? error.message : "Internal Server Error on isWorkerArrived action",
             statusCode: 500
         }
         }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { CustomerProfileTabs } from "@/components/customer-profile-tabs";
 import { GetServerSessionHere } from "@/app/api/auth/[...nextauth]/options";
+import { notFound } from "next/navigation";
 
 export default async function CustomerProfilePage({
     params,
@@ -23,14 +24,28 @@ export default async function CustomerProfilePage({
 
     const bookings = bookingsResult.success && bookingsResult.data ? bookingsResult.data : [];
 
+    if (!customer.success || !customer.data) {
+        notFound();
+    }
+
+    const user = customer.data as {
+        _id: { toString: () => string };
+        name: string;
+        email: string;
+        phone?: string;
+        avatar?: string;
+        role: string;
+        createdAt?: Date;
+    };
+
     const customerData = {
-        _id: customer._id.toString(),
-        name: customer.name,
-        email: customer.email,
-        phone: customer.phone,
-        avatar: customer.avatar,
-        role: customer.role,
-        createdAt: customer.createdAt,
+        _id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        avatar: user.avatar,
+        role: user.role,
+        createdAt: user.createdAt,
     };
 
     const bookingsData = bookings.map((b: Record<string, unknown>) => ({
@@ -45,7 +60,7 @@ export default async function CustomerProfilePage({
     }));
 
     return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen mt-14 bg-background">
             <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <Link
                     href="/c/dashboard"

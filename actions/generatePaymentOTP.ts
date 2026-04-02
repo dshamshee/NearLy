@@ -15,8 +15,8 @@ export const generatePaymentOTP = async (type: "CUSTOMER" | "WORKER", bookingId:
             return {
                 success: false,
                 message: "Booking not found",
-                statusCode: 404,
                 error: "Booking not found",
+                statusCode: 404,
                 data: null,
             };
         }
@@ -31,7 +31,7 @@ export const generatePaymentOTP = async (type: "CUSTOMER" | "WORKER", bookingId:
 
         return {
             success: true,
-            message: "Payment OTP generated successfully",
+            message: "OTP generated successfully",
             statusCode: 200,
             data: otp,
             error: null,
@@ -42,9 +42,9 @@ export const generatePaymentOTP = async (type: "CUSTOMER" | "WORKER", bookingId:
         console.error("Error in generatePaymentOTP:", error);
         return {
             success: false,
-            message: error instanceof Error ? error.message : "Something went wrong",
+            message: "Internal Server Error",
+            error: error instanceof Error ? error.message : "Internal Server Error on generatePaymentOTP action",
             statusCode: 500,
-            error: error instanceof Error ? error.message : "Unknown error",
             data: null
         };
     }

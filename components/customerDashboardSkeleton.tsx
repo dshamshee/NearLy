@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 /** Full customer dashboard skeleton - use in loading.tsx */
 export function CustomerDashboardSkeleton() {
   return (
-    <div className="mainContainer min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mainContainer mt-14 min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
       {/* Hero section */}
       <div className="hero w-full flex md:flex-row flex-col items-center justify-between gap-10 md:px-16 py-5">
         <div className="text text-center w-full max-w-xl">

@@ -14,6 +14,7 @@ export const getWorkerRecentBookings = async (): Promise<Response> =>{
             return <Response> {
                 success: false,
                 message: "Unauthorized",
+                error: "Unauthorized",
                 statusCode: 401,
                 data: null,
             }
@@ -25,6 +26,7 @@ export const getWorkerRecentBookings = async (): Promise<Response> =>{
             return <Response>{
                 success: false,
                 message: "No bookings found",
+                error: "No bookings found",
                 statusCode: 404,
                 data: null,
             }
@@ -35,12 +37,14 @@ export const getWorkerRecentBookings = async (): Promise<Response> =>{
             message: "Recent Bookings fetched successfully",
             statusCode: 200,
             data: JSON.parse(JSON.stringify(bookings)),
+            error: null,
         }
 
     } catch (error: unknown) {
         return {
             success: false,
-            message: error instanceof Error ? error.message : "Internal Server Error",
+            message: "Internal Server Error",
+            error: error instanceof Error ? error.message : "Internal Server Error on getWorkerRecentBookings action",
             statusCode: 500,
             data: null,
         }

@@ -74,7 +74,7 @@ export default function WorkerProfileEdit({details}: {details: WorkerDetailsType
     };
 
     return (
-        <div className="mainContainer min-h-screen bg-gradient-to-br from-background via-background to-accent/20 py-8 px-4 sm:px-6 lg:px-8">
+        <div className="mainContainer mt-14 min-h-screen bg-gradient-to-br from-background via-background to-accent/20 py-8 px-4 sm:px-6 lg:px-8">
             <div className="max-w-5xl mx-auto">
                 {/* Enhanced Header */}
                 <div className="mb-10">

@@ -11,9 +11,9 @@ export const fetchPayment = async (paymentId: string, orderId: string, bookingId
         if(!payment){
             return {
                 success: false,
-                message: "Payment not found in Razorpay",
-                statusCode: 404,
+                message: "Failed to get payment details. Please try again later.",
                 error: "Payment not found in Razorpay",
+                statusCode: 404,
             }
         }
         
@@ -56,7 +56,7 @@ export const fetchPayment = async (paymentId: string, orderId: string, bookingId
         const message = err?.error?.description ?? (error instanceof Error ? error.message : "Internal Server Error");
         return {
             success: false,
-            message,
+            message: "Internal Server Error",
             statusCode: statusCode,
             error: message,
         }

@@ -12,7 +12,8 @@ export async function GET(
         if (!workerId || typeof workerId !== "string") {
             return NextResponse.json<Response>({
                 success: false,
-                message: "Worker ID is required",
+                message: "Invalid request. Please try again.",
+                error: "Worker ID is required",
                 statusCode: 400,
                 data: null,
             }, { status: 400 });
@@ -26,6 +27,7 @@ export async function GET(
             return NextResponse.json<Response>({
                 success: false,
                 message: "Worker not found",
+                error: "Worker not found",
                 statusCode: 404,
                 data: null,
             }, { status: 404 })
@@ -45,7 +47,8 @@ export async function GET(
     } catch (error: unknown) {
         return NextResponse.json<Response>({
             success: false,
-            message: error instanceof Error ? error.message : "Internal Server Error on worker toggle status route",
+            message: "Internal Server Error",
+            error: error instanceof Error ? error.message : "Internal Server Error on worker toggle status route",
             statusCode: 500,
             data: null,
         }, { status: 500 })

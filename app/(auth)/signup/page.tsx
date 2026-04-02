@@ -106,7 +106,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="mainContainer min-h-screen p-4 flex flex-col items-center justify-center bg-background">
+    <div className="mainContainer min-h-screen p-4 mt-10 flex flex-col items-center justify-center bg-background">
       <h1 className="text-2xl font-bold text-foreground">
         Welcom to
         <span className="text-muted-foreground"> Near</span>

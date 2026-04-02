@@ -12,6 +12,7 @@ import {
     Star,
     Calendar,
     CreditCard,
+    Lock,
 } from "lucide-react";
 import Link from "next/link";
 import { WorkerProfessions } from "@/types/worker";
@@ -123,7 +124,7 @@ export default async function WorkerProfilePage() {
     ];
 
     return (
-        <div className="w-full min-h-screen bg-background">
+        <div className="w-full min-h-screen bg-background mt-14">
             <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <Link
                     href="/w/dashboard"
@@ -162,9 +163,15 @@ export default async function WorkerProfilePage() {
                                     )}
                                 </div>
                                 <Link href="/w/profile/edit" className="mt-4 w-full lg:w-auto">
-                                    <Button variant="outline" size="sm" className="w-full lg:w-auto gap-2">
+                                    <Button variant="outline" size="sm" className="w-full cursor-pointer lg:w-auto gap-2">
                                         <Edit3 className="size-4" />
                                         Edit Profile
+                                    </Button>
+                                </Link>
+                                <Link href="/reset-password" className="mt-4 w-full lg:w-auto">
+                                    <Button variant="outline" size="sm" className="w-full cursor-pointer lg:w-auto gap-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500">
+                                        <Lock className="size-4" />
+                                        Change Password
                                     </Button>
                                 </Link>
                             </div>

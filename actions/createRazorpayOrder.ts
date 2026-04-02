@@ -25,7 +25,8 @@ export const createRazorpayOrder = async (amount: number): Promise<CreateOrderRe
         if(!order){
             return {
                 success: false,
-                message: "Failed to create Razorpay order",
+                message: "Something went wrong, please try again later.",
+                error: "Failed to create Razorpay order",
                 statusCode: 500,
             };
         }
@@ -46,7 +47,7 @@ export const createRazorpayOrder = async (amount: number): Promise<CreateOrderRe
         const message = err?.error?.description ?? (error instanceof Error ? error.message : "Internal Server Error");
         return {
             success: false,
-            message,
+            message: "Internal Server Error",
             statusCode,
             error: message,
         };

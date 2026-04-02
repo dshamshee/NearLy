@@ -19,7 +19,8 @@ export const setPaymentDetails = async (data: Payment): Promise<Response> => {
         if (!payment) {
             return {
                 success: false,
-                message: "Payment not found in Razorpay",
+                message: "Something went wrong, please try again later.",
+                error: "Payment not found in Razorpay",
                 statusCode: 404,
             }
         }
@@ -74,7 +75,7 @@ export const setPaymentDetails = async (data: Payment): Promise<Response> => {
         const message = err?.error?.description ?? (error instanceof Error ? error.message : "Internal Server Error");
         return {
             success: false,
-            message: message,
+            message: "Internal Server Error",
             statusCode: statusCode,
             error: message,
         }

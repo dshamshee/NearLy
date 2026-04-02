@@ -15,10 +15,14 @@ import {
     XCircle,
     Loader2,
     AlertCircle,
+    Lock,
+    ArrowRight,
 } from "lucide-react";
 import { EditableAvatar } from "@/components/editable-avatar";
 import { EditProfileDialog } from "@/components/edit-profile-dialog";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { Button } from "./ui/button";
 
 type Tab = "details" | "bookings";
 
@@ -161,6 +165,7 @@ export function CustomerProfileTabs({
                             >
                                 {formatRole(customer.role)}
                             </motion.span>
+
                         </div>
                     </div>
                 </div>
@@ -241,6 +246,13 @@ export function CustomerProfileTabs({
                                     ...(customer.createdAt
                                         ? [{ icon: Calendar, label: "Member Since", value: formatDate(customer.createdAt) }]
                                         : []),
+                                    {
+                                        icon: Lock, label: "Security",
+                                        value: <Link href="/reset-password" className="flex items-center gap-2 hover:text-red-500">
+                                            Reset Password
+                                            <ArrowRight className="size-4" />
+                                        </Link>
+                                    },
                                 ] as { icon: typeof Mail; label: string; value: string }[]
                             ).map((item, i) => (
                                 <motion.div

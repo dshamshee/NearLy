@@ -317,8 +317,8 @@ export default function CustomerDashboard() {
           bookingDetails.custLocation.longitude,
           bookingDetails.workNeededProfession
         );
-        if (workers && workers.length > 0) {
-          setNearbyWorkers(workers);
+        if (workers.length > 0) {
+          setNearbyWorkers(workers as NearbyWorkerType[]);
           toast.success("Fetched nearby workers successfully", {
             duration: 3000,
             position: "top-center",

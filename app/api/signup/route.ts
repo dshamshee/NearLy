@@ -103,7 +103,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json<Response>(
       {
         success: false,
-        message: "Internal Server Error on signup route",
+        message: "Internal Server Error",
+        error: error instanceof Error ? error.message : "Internal Server Error on signup route",
         statusCode: 500,
       },
       { status: 500 }

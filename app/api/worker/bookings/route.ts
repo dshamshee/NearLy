@@ -60,7 +60,8 @@ export async function GET(request: NextRequest) {
     } catch (error: unknown) {
         return NextResponse.json<Response>({
             success: false,
-            message: error instanceof Error ? error.message : "Internal Server Error",
+            message: "Internal Server Error",
+            error: error instanceof Error ? error.message : "Internal Server Error on worker bookings route",
             statusCode: 500,
         }, { status: 500 });
     }

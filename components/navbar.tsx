@@ -156,7 +156,7 @@ export function NavigationBar() {
       <MobileNav>
         <MobileNavHeader>
           <div className="flex items-center gap-2">
-            <Image src="/logo.png" alt="logo" width={40} height={40} />
+            <Image src="/Logo2.png" alt="logo" width={40} height={40} />
             <h1 className="text-2xl font-bold">
               <span className="text-foreground">Near</span>
               <span className="text-orange-500">Ly</span>

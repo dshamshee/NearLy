@@ -17,7 +17,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json<Response>(
         {
           success: false,
-          message: "bookingId, paymentId, and orderId are required",
+          message: "Invalid request. Please try again.",
+          error: "bookingId, paymentId, and orderId are required",
           statusCode: 400,
         },
         { status: 400 }
@@ -32,7 +33,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json<Response>(
         {
           success: false,
-          message: "Payment not found in Razorpay",
+          message: "Failed to get payment details. Please try again later.",
+          error: "Payment not found in Razorpay",
           statusCode: 404,
         },
         { status: 404 }
@@ -74,9 +76,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json<Response>(
         {
           success: false,
-          message: "Failed to set payment details",
-          statusCode: 400,
+          message: "Something went wrong, please try again later.",
           error: "Failed to set payment details",
+          statusCode: 400,
           data: null,
         },
         { status: 400 }
@@ -97,7 +99,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json<Response>({
       success: true,
-      message: "Payment details saved successfully",
+      message: "Payment completed successfully",
       statusCode: 200,
       data: newPayment,
       error: null,
@@ -112,7 +114,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json<Response>(
       {
         success: false,
-        message,
+        message: "Internal Server Error",
         statusCode,
         error: message,
       },

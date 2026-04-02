@@ -81,15 +81,16 @@ export const getCustomerRecentProfessionals = async (): Promise<Response> =>{
             message: "Recent Professionals fetched successfully",
             statusCode: 200,
             data: JSON.parse(JSON.stringify(responseData)),
+            error: null,
         };
 
     } catch (error: unknown) {
         return <Response>{
             success: false,
-            message: error instanceof Error ? error.message : "Internal Server Error",
+            message: "Internal Server Error",
+            error: error instanceof Error ? error.message : "Internal Server Error on getCustomerRecentProfessional action",
             statusCode: 500,
             data: null,
-            error: error instanceof Error ? error.message : "Internal Server Error",
         };
     }
 }

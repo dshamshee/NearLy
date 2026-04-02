@@ -52,7 +52,7 @@ export default async function WorkerProfilePage() {
 
     if (!details.success || !details.data) {
         return (
-            <div className="w-full min-h-screen flex items-center justify-center bg-zinc-950">
+            <div className="w-full min-h-screen mt-20 flex items-center justify-center bg-zinc-950">
                 <div className="text-center">
                     <p className="text-red-400 font-medium">Error: {details.message}</p>
                     <Link href="/w/dashboard">
@@ -77,7 +77,7 @@ export default async function WorkerProfilePage() {
         : null;
 
     return (
-        <div className="w-full min-h-screen bg-zinc-950 text-zinc-100 overflow-auto">
+        <div className="w-full min-h-screen mt-20 bg-zinc-950 text-zinc-100 overflow-auto">
             {/* Back link - fixed top left */}
             <Link
                 href="/w/dashboard"

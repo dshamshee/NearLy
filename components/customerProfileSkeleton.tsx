@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 /** Customer profile page skeleton - use in loading.tsx */
 export function CustomerProfileSkeleton() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background mt-14">
       <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back link */}
         <Skeleton className="h-9 w-40 mb-6 rounded-lg" />

@@ -4,8 +4,9 @@
 import { GetServerSessionHere } from "@/app/api/auth/[...nextauth]/options";
 import WorkerModel from "@/models/worker";
 import dbConnect from "@/utils/dbConnection"
+import { Response } from "@/types/response";
 
-export const getWorkerProfileStatus = async ()=>{
+export const getWorkerProfileStatus = async (): Promise<Response> =>{
 
     try {
         await dbConnect();
@@ -14,7 +15,9 @@ export const getWorkerProfileStatus = async ()=>{
             return {
                 success: false,
                 message: "unauthorized",
-                statusCode: 401
+                statusCode: 401,
+                error: "Unauthorized",
+                data: null
             }
         }
 
@@ -24,24 +27,26 @@ export const getWorkerProfileStatus = async ()=>{
                 success: false,
                 message: "Worker profile not completed",
                 statusCode: 400,
+                error: "Worker profile not completed",
                 data: false
             }
         }
 
         return {
             success: true,
-            message: "Worker profile status fetched successfully",
+            message: "Profile status fetched successfully",
             statusCode: 200,
-            data: isProfileCompleted.isProfileCompleted
-        }
+            data: isProfileCompleted.isProfileCompleted,
+            error: null
+        };
 
     } catch (error: unknown) {
-        // throw new Error(error instanceof Error ? error.message : "Internal Server Error on getWorkerProfileStatus");
         return {
             success: false,
-            message: error instanceof Error ? error.message : "Internal Server Error on getWorkerProfileStatus",
+            message: "Internal Server Error",
+            error: error instanceof Error ? error.message : "Internal Server Error on getWorkerProfileStatus action",
             statusCode: 500,
-            data: false
+            data: null,
         }
     }
 }

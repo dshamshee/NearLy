@@ -11,6 +11,7 @@ export async function getWorkerDetails (){
             return{
                 success: false,
                 message: "Unauthorized",
+                error: "Unauthorized",
                 statusCode: 401,
                 data: null,
             };
@@ -22,6 +23,7 @@ export async function getWorkerDetails (){
             return{
                 success: false,
                 message: "Worker not found",
+                error: "Worker not found",
                 statusCode: 404,
                 data: null,
             };
@@ -33,14 +35,15 @@ export async function getWorkerDetails (){
             message: "Worker details fetched successfully",
             statusCode: 200,
             data: JSON.parse(JSON.stringify(worker)),
+            error: null,
         };
 
     } catch (error: unknown) {
         return{
             success: false,
-            message: error instanceof Error ? error.message : "Internal Server Error",
+            message: "Internal Server Error",
+            error: error instanceof Error ? error.message : "Internal Server Error on getWorkerDetails action",
             statusCode: 500,
-            data: null,
         };
     }
 }

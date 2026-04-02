@@ -22,7 +22,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<Response>
         if (!apiKey) {
             return NextResponse.json<Response>({
                 success: false,
-                message: "Resend API key is not configured",
+                message: "Failed to send email. Please try again later.",
                 statusCode: 500,
                 error: "Resend API key is not configured",
             }, { status: 500 });
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<Response>
             return NextResponse.json<Response>(
                 {
                     success: false,
-                    message: "Invalid RESEND_FROM address",
+                    message: "Failed to send email. Please try again later.",
                     statusCode: 500,
                     error: "Could not parse domain from RESEND_FROM",
                 },

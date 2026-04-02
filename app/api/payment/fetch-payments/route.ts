@@ -11,7 +11,8 @@ export async function POST(req: NextRequest) {
             return NextResponse.json<Response>(
                 {
                     success: false,
-                    message: "qrCodeId is required",
+                    message: "Invalid request. Please try again.",
+                    error: "qrCodeId is required",
                     statusCode: 400,
                 },
                 { status: 400 }
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json<Response>(
             {
                 success: false,
-                message,
+                message: "Internal Server Error",
                 statusCode,
                 error: message,
             },

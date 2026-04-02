@@ -13,7 +13,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<Response>
         if (!userId || !rating || !comment) {
             return NextResponse.json<Response>({
                 success: false,
-                message: "userId, rating, and comment are required",
+                message: "Invalid Inputs. Please fiil the form correctly.",
+                error: "userId, rating, and comment are required",
                 statusCode: 400,
                 data: null,
             }, { status: 400 });
@@ -24,6 +25,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<Response>
             return NextResponse.json<Response>({
                 success: false,
                 message: "Worker not found",
+                error: "Worker not found",
                 statusCode: 404,
                 data: null,
             }, { status: 404 });
@@ -58,7 +60,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<Response>
             success: false,
             message: "Internal Server Error",
             statusCode: 500,
-            error: error instanceof Error ? error.message : "Internal Server Error",
+            error: error instanceof Error ? error.message : "Internal Server Error on worker feedback route",
             data: null,
         }, { status: 500 });
     }

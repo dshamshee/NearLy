@@ -27,7 +27,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json<Response>(
         {
           success: false,
-          message: "bookingId is required",
+          message: "Invalid request. Please try again.",
+          error: "bookingId is required",
           statusCode: 400,
         },
         { status: 400 }
@@ -54,7 +55,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json<Response>(
         {
           success: false,
-          message: "Payment amount has not been set for this booking. Please wait for the worker to request payment.",
+          message: "Please wait for the worker to request payment.",
+          error: "Payment amount has not been set for this booking. Please wait for the worker to request payment.",
           statusCode: 400,
         },
         { status: 400 }
@@ -74,7 +76,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json<Response>(
         {
           success: false,
-          message: "Failed to create Razorpay order",
+          message: "Failed to make payment. Please try again later.",
+          error: "Failed to create Razorpay order",
           statusCode: 500,
         },
         { status: 500 }
@@ -83,7 +86,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json<Response>({
       success: true,
-      message: "Order created successfully",
+      message: "Payment order created successfully",
       statusCode: 200,
       data: {
         id: order.id,
@@ -100,7 +103,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json<Response>(
       {
         success: false,
-        message,
+        message: "Internal Server Error",
         statusCode,
         error: message,
       },
