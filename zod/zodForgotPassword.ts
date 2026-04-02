@@ -31,3 +31,16 @@ export const zodForgotReset = z
   });
 
 export type zodForgotResetType = z.infer<typeof zodForgotReset>;
+
+/** New password only (for email / cookie-based forgot-password completion) */
+export const zodForgotNewPasswordOnly = z
+  .object({
+    newPassword: passwordValidator,
+    confirmPassword: passwordValidator,
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Password mismatch",
+    path: ["confirmPassword"],
+  });
+
+export type zodForgotNewPasswordOnlyType = z.infer<typeof zodForgotNewPasswordOnly>;
