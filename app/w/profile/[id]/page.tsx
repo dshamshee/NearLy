@@ -169,7 +169,7 @@ export default async function WorkerProfilePage() {
                                     </Button>
                                 </Link>
                                 <Link href="/reset-password" className="mt-4 w-full lg:w-auto">
-                                    <Buon variant="outline" size="sm" className="w-full cursor-pointer lg:w-auto gap-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500">
+                                    <Button variant="outline" size="sm" className="w-full cursor-pointer lg:w-auto gap-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500">
                                         <Lock className="size-4" />
                                         Change Password
                                     </Button>
