@@ -353,7 +353,7 @@ export const IncomingBookingCard = ({ type }: { type: "worker" | "customer" }) =
                                 <p className="text-xl font-bold text-orange-600 dark:text-orange-400">
                                     ₹{incomingBooking.jobDetails.priceRange}
                                 </p>
-                                <p className="text-xs text-muted-foreground">{distance} away</p>
+                                <p className="text-xs text-muted-foreground">{distance}</p>
                             </div>
                         </div>
                     </div>

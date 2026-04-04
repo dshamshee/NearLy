@@ -15,12 +15,15 @@ import { useSocket } from "@/utils/socketContext";
 import { useState } from "react";
 import { generatePaymentOTP } from "@/actions/generatePaymentOTP";
 import { verifyPaymentOTP } from "@/actions/verifyPaymentOTP";
+import { Loader2 } from "lucide-react";
 
 
 export const WorkerPaymentCard = () => {
 
     const [paymentVerificationOTP, setPaymentVerificationOTP] = useState<string>("");
     const [resetAllStates, setResetAllStates ] = useState<boolean>(false);
+    const [requestingUPI, setRequestingUPI] = useState<boolean>(false);
+    const [otpVerifying, setOtpVerifying] = useState<boolean>(false);
 
 
     const { socket, isConnected } = useSocket();
@@ -52,6 +55,7 @@ export const WorkerPaymentCard = () => {
 
     // Function to handle the UPI payment
     const handleUPIPayment = async () => {
+        setRequestingUPI(true);
         if (amount > 0) {
             if (!socket || !isConnected) {
                 toast.error("Not connected to server. Please wait...", {
@@ -72,6 +76,7 @@ export const WorkerPaymentCard = () => {
                 position: 'top-right',
             });
         }
+        setRequestingUPI(false);
     }
 
     // Function to handle the payment verification
@@ -82,7 +87,7 @@ export const WorkerPaymentCard = () => {
             });
             return;
         }
-
+        setOtpVerifying(true);
         const response = await verifyPaymentOTP("CUSTOMER", incomingBooking?.bookingId ?? "", paymentVerificationOTP)
         if(response.success){
             toast.success(response.message as string, {
@@ -98,6 +103,7 @@ export const WorkerPaymentCard = () => {
                 position: 'top-right',
             });
         }
+        setOtpVerifying(false);
     }
 
 
@@ -151,10 +157,11 @@ export const WorkerPaymentCard = () => {
                                         Cash
                                     </Button>
                                     <Button
+                                        disabled={requestingUPI}
                                         className="cursor-pointer bg-orange-500 hover:bg-orange-600 text-white"
                                         onClick={handleUPIPayment}
                                     >
-                                        Request UPI
+                                        {requestingUPI ? <Loader2 className="size-4 animate-spin" /> : "Request UPI"}
                                     </Button>
                                 </div>
                             </>
@@ -196,11 +203,11 @@ export const WorkerPaymentCard = () => {
                                     </InputOTP>
                                 </div>
                                 <Button
-                                    disabled={!verifyPayment}
+                                    disabled={!verifyPayment || otpVerifying}
                                     className="cursor-pointer bg-orange-500 hover:bg-orange-600 text-white"
                                     onClick={handlePaymentVerification}
                                 >
-                                    Verify OTP
+                                    {otpVerifying ? <Loader2 className="size-4 animate-spin" /> : "Verify OTP"}
                                 </Button>
                             </>
                         )}
